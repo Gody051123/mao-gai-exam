@@ -318,18 +318,7 @@ for topic, items in facts.items():
             "explain": "正确答案是「" + item["a"] + "」。注意区分易混淆选项。"
         })
 
-        # Template 3: "Which is NOT" variant
-        if item["wrong"]:
-            not_ans = item["wrong"][0]
-            not_opts = [not_ans] + [item["a"]] + item["wrong"][1:]
-            singles.append({
-                "id": len(singles)+1, "type":"single",
-                "ch":"综合", "topic":topic, "diff":3,
-                "q": "关于" + item["q"][:20] + "，以下说法错误的是？",
-                "opts": not_opts[:4],
-                "ans": [0],
-                "explain": "错误说法是「" + not_ans + "」。正确说法是「" + item["a"] + "」。"
-            })
+        # Template 3 removed - NOT-type questions don't work well for date/number facts
 
 print(f"Generated {len(singles)} single-choice questions")
 
