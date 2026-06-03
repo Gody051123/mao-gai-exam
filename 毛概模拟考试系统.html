@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毛概模拟考试系统</title>
+<style>
+:root {
+  --bg: #f0f2f5; --card: #fff; --primary: #1a73e8; --danger: #d93025;
+  --success: #188038; --warning: #e37400; --text: #202124; --text2: #5f6368;
+  --border: #dadce0; --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  --radius: 12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:16px}
+
+/* Header */
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:var(--shadow);position:sticky;top:0;z-index:100}
+.header h1{font-size:1.3em;font-weight:700;color:var(--primary)}
+.header-nav{display:flex;gap:8px;flex-wrap:wrap}
+.header-nav button{padding:8px 16px;border:1px solid var(--border);border-radius:20px;background:var(--card);cursor:pointer;font-size:0.9em;transition:all .2s}
+.header-nav button:hover{border-color:var(--primary);color:var(--primary)}
+.header-nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:1.15em;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary);display:flex;align-items:center;gap:8px}
+.card h3{font-size:1em;margin:16px 0 8px;color:var(--primary)}
+
+/* Progress */
+.progress-bar{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.progress-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.7em;cursor:pointer;transition:all .2s;background:#fff}
+.progress-dot.answered{background:var(--primary);color:#fff;border-color:var(--primary)}
+.progress-dot.current{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.3)}
+.progress-dot.flagged{border-color:var(--warning)}
+.stats-row{display:flex;gap:24px;flex-wrap:wrap;font-size:0.9em;color:var(--text2);margin-bottom:12px}
+
+/* Question */
+.question-block{margin-bottom:24px}
+.question-num{display:inline-block;background:var(--primary);color:#fff;padding:2px 10px;border-radius:12px;font-size:0.85em;margin-bottom:8px}
+.question-type{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.8em;margin-left:6px;font-weight:600}
+.type-single{background:#e8f0fe;color:var(--primary)}
+.type-multi{background:#fce8e6;color:var(--danger)}
+.type-judge{background:#e6f4ea;color:var(--success)}
+.question-text{font-size:1.05em;margin:8px 0 12px;font-weight:500}
+.option{margin:6px 0;padding:10px 14px;border:2px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:10px}
+.option:hover{border-color:var(--primary);background:#f8fbff}
+.option.selected{border-color:var(--primary);background:#e8f0fe;font-weight:500}
+.option.correct{border-color:var(--success);background:#e6f4ea}
+.option.wrong{border-color:var(--danger);background:#fce8e6}
+.option-label{font-weight:700;min-width:24px;color:var(--primary)}
+.option input[type="radio"],.option input[type="checkbox"]{margin-top:3px;cursor:pointer}
+
+/* Buttons */
+.btn{padding:10px 24px;border:none;border-radius:20px;font-size:0.95em;cursor:pointer;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#1557b0;box-shadow:0 2px 8px rgba(26,115,232,.3)}
+.btn-outline{background:#fff;border:2px solid var(--primary);color:var(--primary)}
+.btn-outline:hover{background:#e8f0fe}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+
+/* Analysis */
+.analysis-box{margin-top:8px;padding:12px 16px;background:#f8f9fa;border-radius:8px;border-left:4px solid var(--primary)}
+.analysis-box h4{font-size:0.9em;color:var(--primary);margin-bottom:4px}
+.analysis-box p{font-size:0.9em;color:var(--text2)}
+.wrong-tag{color:var(--danger);font-weight:700}
+.right-tag{color:var(--success);font-weight:700}
+
+/* Error Notebook */
+.error-group{margin-bottom:16px}
+.error-group h3{cursor:pointer;padding:10px 14px;background:#f8f9fa;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+.error-group h3:hover{background:#e8f0fe}
+.error-chapter{margin-left:8px;padding:4px 10px;background:var(--primary);color:#fff;border-radius:12px;font-size:0.8em}
+.error-count{font-size:0.85em;color:var(--danger);font-weight:700}
+.error-item{padding:10px 14px;margin:4px 0;border-radius:8px;background:#fff5f5;border:1px solid #fce8e6;font-size:0.9em}
+.error-item .topic-tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.75em;background:#fce8e6;color:var(--danger);margin-right:6px}
+
+/* Score */
+.score-circle{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;font-weight:700;border:6px solid}
+.score-circle.excellent{border-color:var(--success);color:var(--success)}
+.score-circle.good{border-color:var(--primary);color:var(--primary)}
+.score-circle.fair{border-color:var(--warning);color:var(--warning)}
+.score-circle.poor{border-color:var(--danger);color:var(--danger)}
+.score-num{font-size:2.5em}
+.score-label{font-size:0.85em;color:var(--text2)}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;text-align:center;margin:16px 0}
+.summary-item{padding:12px;border-radius:8px;background:#f8f9fa}
+.summary-item .num{font-size:1.5em;font-weight:700}
+.summary-item .lbl{font-size:0.8em;color:var(--text2)}
+
+/* Chapter weak analysis */
+.chapter-bar{margin:6px 0;display:flex;align-items:center;gap:8px}
+.chapter-bar .name{min-width:120px;font-size:0.85em}
+.chapter-bar .bar-bg{flex:1;height:20px;background:#e8eaed;border-radius:10px;overflow:hidden}
+.chapter-bar .bar-fill{height:100%;border-radius:10px;transition:width .5s}
+.chapter-bar .pct{min-width:45px;font-size:0.85em;text-align:right}
+
+/* Modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:var(--radius);padding:32px;max-width:500px;width:90%;text-align:center}
+.modal h2{margin-bottom:12px}
+.modal p{margin-bottom:20px;color:var(--text2)}
+
+/* Responsive */
+@media(max-width:600px){
+  .header h1{font-size:1.1em}
+  .card{padding:16px}
+  .option{padding:8px 10px}
+  .score-circle{width:90px;height:90px}
+  .score-num{font-size:1.8em}
+}
+.hidden{display:none!important}
+
+/* Tab active in analysis */
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab-bar button{padding:8px 14px;border:1px solid var(--border);border-radius:16px;background:#fff;cursor:pointer;font-size:0.85em}
+.tab-bar button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>毛概模拟考试系统</h1>
+  <div class="header-nav">
+    <button onclick="showPage('home')" id="nav-home" class="active">模拟考试</button>
+    <button onclick="showPage('analysis')" id="nav-analysis">历史成绩</button>
+    <button onclick="showPage('errors')" id="nav-errors">错题本 <span id="err-badge" style="background:var(--danger);color:#fff;padding:1px 7px;border-radius:10px;font-size:.75em;margin-left:4px">0</span></button>
+    <button onclick="resetAll()" style="border-color:var(--danger);color:var(--danger)">重置数据</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ========== HOME PAGE ========== -->
+<div id="page-home">
+  <div class="card" style="text-align:center">
+    <h2>模拟考试</h2>
+    <p style="color:var(--text2);margin-bottom:16px">单选题 25 题（50分）+ 多选题 10 题（30分）+ 判断题 10 题（20分）<br>共 45 题，满分 100 分</p>
+    <div id="exam-history" style="margin:12px 0;font-size:.9em;color:var(--text2)"></div>
+    <button class="btn btn-primary" onclick="startExam()" style="font-size:1.1em;padding:14px 40px">开始考试</button>
+    <p style="margin-top:10px;font-size:.85em;color:var(--text2)">
+      第 <span id="exam-round">1</span> 套试卷 |
+      <span id="smart-hint"></span>
+    </p>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <h2>章节知识点掌握度</h2>
+    <div id="chapter-mastery"></div>
+    <p style="font-size:.85em;color:var(--text2);margin-top:8px">基于错题记录自动计算</p>
+  </div>
+</div>
+
+<!-- ========== EXAM PAGE ========== -->
+<div id="page-exam" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <h2 id="exam-title" style="border:none;margin:0">模拟考试</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="timer" style="font-weight:700;font-size:1.1em"></span>
+        <button class="btn btn-outline" onclick="flagQuestion()" style="font-size:.85em">标记待定</button>
+        <button class="btn btn-danger" onclick="submitExam()">交卷</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="progress-bar" id="progress-dots"></div>
+    <div class="stats-row">
+      <span>已答: <strong id="answered-count">0</strong>/45</span>
+      <span>标记: <strong id="flagged-count">0</strong></span>
+    </div>
+  </div>
+
+  <div class="card" id="question-container"></div>
+
+  <div class="btn-group" style="justify-content:space-between">
+    <button class="btn btn-outline" id="btn-prev" onclick="prevQuestion()">上一题</button>
+    <span style="color:var(--text2);font-size:.9em" id="q-pos">1/45</span>
+    <button class="btn btn-outline" id="btn-next" onclick="nextQuestion()">下一题</button>
+  </div>
+</div>
+
+<!-- ========== RESULT PAGE ========== -->
+<div id="page-result" class="hidden">
+  <div class="card" style="text-align:center">
+    <h2>考试成绩</h2>
+    <div id="score-display"></div>
+    <div class="summary-grid" id="summary-grid"></div>
+    <button class="btn btn-primary" onclick="viewFullAnalysis()">查看详细解析</button>
+    <button class="btn btn-outline" onclick="showPage('home');refreshHome()" style="margin-left:8px">返回首页</button>
+  </div>
+</div>
+
+<!-- ========== ANALYSIS PAGE ========== -->
+<div id="page-analysis" class="hidden">
+  <div class="card">
+    <h2>历史成绩记录</h2>
+    <div id="history-list"><p style="color:var(--text2)">暂无记录</p></div>
+  </div>
+</div>
+
+<!-- ========== FULL ANALYSIS PAGE ========== -->
+<div id="page-full-analysis" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 style="border:none;margin:0">详细解析</h2>
+      <button class="btn btn-outline" onclick="showPage('home');refreshHome()">返回首页</button>
+    </div>
+    <div class="tab-bar" id="analysis-tabs"></div>
+  </div>
+  <div id="analysis-content"></div>
+</div>
+
+<!-- ========== ERROR NOTEBOOK PAGE ========== -->
+<div id="page-errors" class="hidden">
+  <div class="card">
+    <h2>错题本</h2>
+    <p style="color:var(--text2);margin-bottom:12px">按知识点体系整理，帮助你针对性复习薄弱环节</p>
+    <div id="error-notebook"><p style="color:var(--text2)">暂无错题记录</p></div>
+    <button class="btn btn-primary" onclick="retestErrors()" id="btn-retest" style="display:none">针对错题重新练习</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ===================== QUESTION BANK =====================
+// Tags: ch=章节, topic=知识点标签, diff=难度1-3
+
+const QUESTION_BANK = [
+  // ===== 导论：马克思主义中国化 =====
+  {id:1,type:'single',ch:'导论',topic:'马中化命题',diff:1,
+   q:'第一次明确提出"马克思主义中国化"这一命题的会议是？',
+   opts:['遵义会议','中共六届六中全会','中共七大','中共六届七中全会'],
+   ans:[1],explain:'1938年，毛泽东在党的六届六中全会上作《论新阶段》政治报告，首次正式提出"马克思主义中国化"的重大命题。'},
+  {id:2,type:'single',ch:'导论',topic:'马中化命题',diff:1,
+   q:'毛泽东最先提出"马克思主义中国化"这个命题是在哪篇文章中？',
+   opts:['《论新阶段》','《改造我们的学习》','《反对本本主义》','《实践论》'],
+   ans:[0],explain:'《论新阶段》是1938年六届六中全会的政治报告，首次提出该命题。《反对本本主义》是初步形成标志，《实践论》是成熟标志。'},
+  {id:3,type:'single',ch:'导论',topic:'两次飞跃',diff:2,
+   q:'马克思主义中国化的第一个重大理论成果是？',
+   opts:['邓小平理论','"三个代表"重要思想','毛泽东思想','科学发展观'],
+   ans:[2],explain:'毛泽东思想是马克思主义中国化时代化的第一次历史性飞跃。中国特色社会主义理论体系是第二次飞跃（新的飞跃）。'},
+  {id:4,type:'multi',ch:'导论',topic:'两次飞跃',diff:2,
+   q:'马克思主义同中国实际相结合的两次历史性飞跃，产生的两大理论成果是？',
+   opts:['毛泽东思想','新民主主义革命论','人民民主专政的理论','中国特色社会主义理论体系','社会主义初级阶段理论'],
+   ans:[0,3],explain:'第一次飞跃→毛泽东思想；第二次飞跃→中国特色社会主义理论体系。B、C、E是具体内容，不是飞跃成果。'},
+  {id:5,type:'multi',ch:'导论',topic:'中特理论体系',diff:2,
+   q:'中国特色社会主义理论体系包括？',
+   opts:['毛泽东思想','邓小平理论','"三个代表"重要思想','科学发展观','习近平新时代中国特色社会主义思想'],
+   ans:[1,2,3,4],explain:'毛泽东思想是第一次飞跃，不属于中特理论体系。中特理论体系包括邓小平理论、"三个代表"重要思想、科学发展观，以及新时代以来的习近平新时代中国特色社会主义思想。'},
+  {id:6,type:'judge',ch:'导论',topic:'理论关系',diff:1,
+   q:'毛泽东思想是中国特色社会主义理论体系的重要思想渊源。',
+   ans:[0],explain:'（正确）毛泽东思想和中国特色社会主义理论体系是一脉相承又与时俱进的关系。毛泽东思想为中国特色社会主义理论体系提供了基本遵循。'},
+
+  // ===== 第一章：毛泽东思想 =====
+  {id:7,type:'single',ch:'第一章',topic:'时代背景',diff:2,
+   q:'毛泽东思想形成的时代背景是？',
+   opts:['和平与发展','战争与革命','经济全球化','冷战对峙'],
+   ans:[1],explain:'19世纪末20世纪初，世界进入帝国主义和无产阶级革命时代，战争与革命成为时代主题。中特理论体系的时代背景才是"和平与发展"。'},
+  {id:8,type:'single',ch:'第一章',topic:'形成阶段',diff:2,
+   q:'毛泽东思想初步形成的标志是？',
+   opts:['提出新民主主义革命基本思想','提出农村包围城市、武装夺取政权思想','新民主主义革命理论的系统阐述','提出人民民主专政理论'],
+   ans:[1],explain:'萌芽=大革命时期（新民主主义革命基本思想）；初步形成=土地革命战争前中期（农村包围城市）；成熟=抗日战争时期（系统阐述）；继续发展=解放战争及以后（人民民主专政）。'},
+  {id:9,type:'single',ch:'第一章',topic:'确立',diff:1,
+   q:'把毛泽东思想确立为党的指导思想并写入党章是在？',
+   opts:['遵义会议','中共六届六中全会','中共七大','中共八大'],
+   ans:[2],explain:'1945年党的七大，毛泽东思想写入党章，确立为党必须长期坚持的指导思想。'},
+  {id:10,type:'multi',ch:'第一章',topic:'活的灵魂',diff:2,
+   q:'贯穿于毛泽东思想各个组成部分的活的灵魂是？',
+   opts:['实事求是','群众路线','独立自主','党的建设','武装斗争'],
+   ans:[0,1,2],explain:'活的灵魂=实事求是+群众路线+独立自主。D、E是三大法宝（统一战线+武装斗争+党的建设）的内容。'},
+  {id:11,type:'single',ch:'第一章',topic:'活的灵魂',diff:1,
+   q:'中国共产党的一切工作必须遵循的基本路线和基本方法是？',
+   opts:['实事求是','独立自主','群众路线','统一战线'],
+   ans:[2],explain:'群众路线是党的根本工作路线和根本工作方法。实事求是是思想路线的核心，独立自主是根本原则。'},
+  {id:12,type:'single',ch:'第一章',topic:'精髓',diff:2,
+   q:'毛泽东思想的世界观和方法论的基础是？',
+   opts:['解放思想','实事求是','独立自主','群众路线'],
+   ans:[1],explain:'实事求是是毛泽东思想世界观和方法论的基础，是毛泽东思想活的灵魂的核心。'},
+
+  // ===== 第二章：新民主主义革命 =====
+  {id:13,type:'single',ch:'第二章',topic:'国情矛盾',diff:1,
+   q:'近代中国半殖民地半封建社会最主要的矛盾是？',
+   opts:['封建主义和人民大众的矛盾','帝国主义和中华民族的矛盾','农民阶级和地主阶级的矛盾','工人阶级和资产阶级的矛盾'],
+   ans:[1],explain:'两对主要矛盾：帝国主义vs中华民族（最主要）+封建主义vs人民大众。'},
+  {id:14,type:'single',ch:'第二章',topic:'总路线',diff:2,
+   q:'1948年，毛泽东完整地提出新民主主义革命总路线的文章是？',
+   opts:['《中国社会各阶级的分析》','《新民主主义论》','《论人民民主专政》','《在晋绥干部会议上的讲话》'],
+   ans:[3],explain:'1948年《在晋绥干部会议上的讲话》完整表述：无产阶级领导的，人民大众的，反对帝国主义、封建主义和官僚资本主义的革命。'},
+  {id:15,type:'single',ch:'第二章',topic:'领导权',diff:2,
+   q:'区分新旧民主主义革命的根本标志是？',
+   opts:['革命对象不同','革命动力不同','革命方法不同','革命领导权掌握在无产阶级还是资产阶级手中'],
+   ans:[3],explain:'无产阶级领导权是中国革命的中心问题，也是新民主主义革命理论的核心问题。'},
+  {id:16,type:'single',ch:'第二章',topic:'错误倾向',diff:2,
+   q:'主张将民主革命和社会主义革命"毕其功于一役"的主要代表人物是？',
+   opts:['陈独秀','王明','瞿秋白','张国焘'],
+   ans:[1],explain:'王明="左"倾教条主义→"毕其功于一役"。陈独秀=右倾机会主义→"二次革命论"。'},
+  {id:17,type:'single',ch:'第二章',topic:'三大法宝',diff:1,
+   q:'毛泽东在《〈共产党人〉发刊词》中提出的三大法宝是？',
+   opts:['土地革命、武装斗争、党的建设','统一战线、武装斗争、党的建设','统一战线、土地革命、武装斗争','理论联系实际、密切联系群众、批评与自我批评'],
+   ans:[1],explain:'三大法宝=统一战线+武装斗争+党的建设。注意与"三大优良作风"和"活的灵魂"区分。'},
+  {id:18,type:'multi',ch:'第二章',topic:'经济纲领',diff:2,
+   q:'新民主主义革命的经济纲领包括？',
+   opts:['没收封建地主阶级的土地归农民所有','没收官僚资产阶级的垄断资本归新民主主义国家所有','保护民族工商业','进行大规模的社会主义改造','没收一切私有财产'],
+   ans:[0,1,2],explain:'三大经济纲领。D（社会主义改造）是1953-1956年社会主义革命阶段的任务。'},
+  {id:19,type:'multi',ch:'第二章',topic:'经济纲领',diff:3,
+   q:'关于新民主主义革命经济纲领，以下说法正确的有？',
+   opts:['没收封建地主土地归农民所有是新民主主义革命的主要内容','没收官僚资本具有双重革命性质','保护民族工商业意味着对资本主义不加任何限制','没收官僚资本为社会主义国营经济奠定了基础'],
+   ans:[0,1,3],explain:'C×保护不是无限制的，对不利于国计民生的私人资本要加以限制。'},
+  {id:20,type:'single',ch:'第二章',topic:'中心内容',diff:2,
+   q:'新民主主义革命的中心内容是？',
+   opts:['武装斗争','土地革命','没收封建地主阶级的土地归农民所有','建立农村革命根据地'],
+   ans:[2],explain:'没收封建地主阶级的土地归农民所有，是新民主主义革命的主要内容（中心内容）。'},
+  {id:21,type:'single',ch:'第二章',topic:'革命性质',diff:2,
+   q:'新民主主义革命的性质是？',
+   opts:['无产阶级社会主义革命','新式的特殊的资产阶级民主革命','旧式的资产阶级民主革命','社会主义性质的革命'],
+   ans:[1],explain:'新民主主义革命的性质是资产阶级民主主义革命，但它是"新式的特殊的"——无产阶级领导、马列主义指导、社会主义前途。'},
+  {id:22,type:'judge',ch:'第二章',topic:'革命性质',diff:2,
+   q:'新民主主义革命的性质是无产阶级社会主义革命。',
+   ans:[1],explain:'（错误）新民主主义革命的性质是资产阶级民主主义革命（新式的特殊的），不是无产阶级社会主义革命。革命分两步走，社会主义革命是第二步。'},
+  {id:23,type:'single',ch:'第二章',topic:'革命道路',diff:2,
+   q:'中国革命红色政权能够存在和发展的根本原因是？',
+   opts:['中国政治经济发展不平衡','共产党的正确领导','有相当力量的正式红军','有良好的群众基础'],
+   ans:[0],explain:'中国政治经济发展不平衡是根本原因（客观条件）。党的领导、红军、群众基础是主观条件和重要条件。'},
+  {id:24,type:'multi',ch:'第二章',topic:'工农武装割据',diff:2,
+   q:'"工农武装割据"思想主要包括？',
+   opts:['武装斗争','土地革命','农村革命根据地','统一战线','党的建设'],
+   ans:[0,1,2],explain:'工农武装割据三要素=武装斗争（主要形式）+土地革命（中心内容）+农村革命根据地（战略阵地）。D、E是三大法宝的内容。'},
+  {id:25,type:'single',ch:'第二章',topic:'军队建设',diff:1,
+   q:'人民军队建设的最根本原则是？',
+   opts:['坚持中国共产党对军队的绝对领导','全心全意为人民服务','官兵一致','军民一致'],
+   ans:[0],explain:'党对军队的绝对领导是建设新型人民军队的根本原则，是毛泽东建军思想的核心。'},
+
+  // ===== 第三章：社会主义改造 =====
+  {id:26,type:'single',ch:'第三章',topic:'社会性质',diff:2,
+   q:'新民主主义社会属于？',
+   opts:['资本主义体系','社会主义体系','独立的社会形态','共产主义体系'],
+   ans:[1],explain:'新民主主义社会属于社会主义体系，但不是独立的社会形态，而是过渡性质的社会。'},
+  {id:27,type:'multi',ch:'第三章',topic:'社会性质',diff:2,
+   q:'关于新民主主义社会的性质，正确的说法有？',
+   opts:['它是一个独立的社会形态','它属于社会主义体系','它是既有社会主义因素又有非社会主义因素的过渡性社会','社会主义因素起决定作用，必然向社会主义过渡','它属于资本主义体系'],
+   ans:[1,2,3],explain:'A×不是独立社会形态。E×不属于资本主义体系。'},
+  {id:28,type:'single',ch:'第三章',topic:'确立时间',diff:1,
+   q:'社会主义基本制度在我国初步确立的时间是？',
+   opts:['1949年','1952年','1954年','1956年'],
+   ans:[3],explain:'1956年底，三大改造基本完成，标志着社会主义基本制度在我国初步确立。'},
+  {id:29,type:'judge',ch:'第三章',topic:'新中国成立',diff:2,
+   q:'1949年中华人民共和国的成立，标志着我国进入了社会主义社会。',
+   ans:[1],explain:'（错误）1949年新中国成立标志进入新民主主义社会，1956年底三大改造完成后才进入社会主义社会。'},
+  {id:30,type:'single',ch:'第三章',topic:'过渡总路线',diff:2,
+   q:'过渡时期总路线的主体是？',
+   opts:['对农业的社会主义改造','对手工业的社会主义改造','对资本主义工商业的社会主义改造','实现国家的社会主义工业化'],
+   ans:[3],explain:'"一化三改"中，"一化"（社会主义工业化）是主体，"三改"是两翼。'},
+  {id:31,type:'single',ch:'第三章',topic:'资本主义工商业',diff:2,
+   q:'我国对资本主义工商业进行社会主义改造的政策是？',
+   opts:['无偿没收','和平赎买','无偿调拨','保护发展'],
+   ans:[1],explain:'和平赎买是中国对资本主义工商业改造的创举。'},
+  {id:32,type:'single',ch:'第三章',topic:'农业改造',diff:2,
+   q:'农业社会主义改造中，具有半社会主义性质的组织形式是？',
+   opts:['互助组','初级农业生产合作社','高级农业生产合作社','人民公社'],
+   ans:[1],explain:'互助组=社会主义萌芽，初级社=半社会主义，高级社=完全社会主义。'},
+  {id:33,type:'single',ch:'第三章',topic:'消灭剥削',diff:1,
+   q:'在我国，剥削阶级和剥削制度被消灭的标志是？',
+   opts:['中华人民共和国的成立','全国大陆的统一','三大改造的完成','土地改革的完成'],
+   ans:[2],explain:'三大改造完成后，生产资料私有制变为公有制，剥削制度被消灭。'},
+
+  // ===== 第五/六章：邓小平理论与初级阶段 =====
+  {id:34,type:'single',ch:'第六章',topic:'时代主题',diff:1,
+   q:'当今世界的时代主题是？',
+   opts:['战争与革命','和平与发展','科技与创新','交流与融合'],
+   ans:[1],explain:'20世纪70年代后，和平与发展取代战争与革命成为时代主题。'},
+  {id:35,type:'single',ch:'第六章',topic:'提出命题',diff:1,
+   q:'邓小平正式提出"建设有中国特色的社会主义"这一命题是在？',
+   opts:['党的十二大','党的十三大','党的十四大','党的十一届三中全会'],
+   ans:[0],explain:'1982年党的十二大，邓小平在开幕词中提出"走自己的道路，建设有中国特色的社会主义"。'},
+  {id:36,type:'single',ch:'第六章',topic:'首要问题',diff:2,
+   q:'建设有中国特色社会主义首要的基本理论问题是？',
+   opts:['解放思想，实事求是','什么是社会主义，怎样建设社会主义','一个中心，两个基本点','正确处理改革、发展、稳定的关系'],
+   ans:[1],explain:'邓小平理论首要的基本理论问题="什么是社会主义，怎样建设社会主义"。社会主义本质论就是对此的回答。'},
+  {id:37,type:'single',ch:'第六章',topic:'社会本质',diff:1,
+   q:'邓小平明确提出社会主义本质的科学论断是在？',
+   opts:['1978年十一届三中全会','1982年党的十二大','1992年南方谈话','1997年党的十五大'],
+   ans:[2],explain:'1992年南方谈话："社会主义的本质，是解放生产力，发展生产力，消灭剥削，消除两极分化，最终达到共同富裕。"'},
+  {id:38,type:'multi',ch:'第六章',topic:'社会本质',diff:1,
+   q:'社会主义本质的科学论断包括？',
+   opts:['解放生产力','发展生产力','消灭剥削','消除两极分化','最终达到共同富裕'],
+   ans:[0,1,2,3,4],explain:'五句话是邓小平1992年南方谈话对社会主义本质的完整概括，缺一不可。'},
+  {id:39,type:'single',ch:'第六章',topic:'社会本质',diff:2,
+   q:'社会主义的最终目标和结果是？',
+   opts:['解放生产力','发展生产力','消灭剥削','实现共同富裕'],
+   ans:[3],explain:'解放和发展生产力是生产力基础，消灭剥削和消除两极分化是过程手段，最终目标是共同富裕。'},
+  {id:40,type:'single',ch:'第六章',topic:'社会主义原则',diff:2,
+   q:'在改革中，邓小平强调必须坚持的两条根本原则是？',
+   opts:['不断发展生产和增加社会财富','坚持公有制为主体和实现共同富裕','实行按劳分配和改善人民生活','扩大改革开放和增强综合国力'],
+   ans:[1],explain:'两条根本原则=坚持公有制为主体+实现共同富裕。'},
+  {id:41,type:'single',ch:'第六章',topic:'初级阶段',diff:2,
+   q:'现阶段中国最大的实际、最基本的国情是？',
+   opts:['生产力水平低','人口数量多','市场经济体制不完善','处于并将长期处于社会主义初级阶段'],
+   ans:[3],explain:'社会主义初级阶段是中国最大的实际，是制定一切路线方针政策的根本依据。'},
+  {id:42,type:'multi',ch:'第六章',topic:'初级阶段',diff:2,
+   q:'社会主义初级阶段的科学含义是？',
+   opts:['我国已经是社会主义社会','我国社会主义还处在初级阶段','这是任何国家进入社会主义都会经历的阶段','我国必须经历一个很长的初级阶段去实现工业化'],
+   ans:[0,1],explain:'两层含义：已是社会主义+还处于初级阶段。C×不是泛指的，是特指中国的。'},
+  {id:43,type:'judge',ch:'第六章',topic:'初级阶段',diff:2,
+   q:'我国社会主义初级阶段是泛指任何国家进入社会主义都会经历的起始阶段。',
+   ans:[1],explain:'（错误）初级阶段是特指我国在生产力落后条件下建设社会主义必然要经历的特定阶段，不是泛指的。'},
+  {id:44,type:'single',ch:'第六章',topic:'基本路线',diff:1,
+   q:'党在社会主义初级阶段基本路线的核心内容是？',
+   opts:['"一个中心、两个基本点"','自力更生，艰苦创业','建设社会主义现代化国家','领导和团结全国各族人民'],
+   ans:[0],explain:'基本路线核心="一个中心、两个基本点"。经济建设=中心（兴国之要），四项基本原则=立国之本，改革开放=强国之路。'},
+  {id:45,type:'single',ch:'第六章',topic:'改革关系',diff:2,
+   q:'处理改革、发展、稳定关系的重要结合点是？',
+   opts:['坚持改革开放','保持社会稳定','不断改善人民生活','加快经济发展'],
+   ans:[2],explain:'改革=动力，发展=目的，稳定=前提。结合点=不断改善人民生活。'},
+  {id:46,type:'single',ch:'第六章',topic:'发展',diff:2,
+   q:'党执政兴国的第一要务是？',
+   opts:['改革','发展','稳定','创新'],
+   ans:[1],explain:'发展是党执政兴国的第一要务。改革=动力，发展=目的，稳定=前提。'},
+  {id:47,type:'single',ch:'第六章',topic:'市场经济',diff:2,
+   q:'党的十四大确立的我国经济体制改革目标是？',
+   opts:['建立社会主义市场经济体制','深化国有企业改革','建立健全社会保障体系','建立合理的收入分配制度'],
+   ans:[0],explain:'1992年十四大明确把建立社会主义市场经济体制作为经济体制改革目标。'},
+  {id:48,type:'single',ch:'第六章',topic:'基本经济制度',diff:2,
+   q:'社会主义初级阶段的基本经济制度是在哪次会议上明确提出的？',
+   opts:['党的十三大','党的十四大','党的十五大','党的十六大'],
+   ans:[2],explain:'1997年十五大明确提出公有制为主体、多种所有制经济共同发展的基本经济制度。'},
+  {id:49,type:'single',ch:'第六章',topic:'一国两制',diff:2,
+   q:'"一国两制"构想最先成功应用于解决？',
+   opts:['台湾问题','香港问题','澳门问题','西藏问题'],
+   ans:[1],explain:'最初针对台湾问题提出，但最先应用于香港问题（1997年）。注意"针对谁"和"先用于谁"的区别。'},
+  {id:50,type:'judge',ch:'第六章',topic:'一国两制',diff:2,
+   q:'"一国两制"构想最初是针对香港问题提出来的。',
+   ans:[1],explain:'（错误）最初是针对台湾问题提出的（1950年代"一纲四目"），但最先成功应用于香港。'},
+  {id:51,type:'single',ch:'第六章',topic:'外交',diff:1,
+   q:'中国对外政策的根本原则是？',
+   opts:['和平共处五项原则','加强与第三世界国家团结合作','独立自主','促进世界和平与发展'],
+   ans:[2],explain:'根本原则=独立自主。和平共处五项原则是处理国家间关系的基本准则。'},
+  {id:52,type:'single',ch:'第六章',topic:'外交',diff:2,
+   q:'和平共处五项原则中最重要的原则是？',
+   opts:['互相尊重主权和领土完整','互不侵犯','互不干涉内政','平等互利'],
+   ans:[0],explain:'五项原则中以"互相尊重主权和领土完整"最为重要，是其他四项的基础和前提。'},
+
+  // ===== 第七章："三个代表"重要思想 =====
+  {id:53,type:'single',ch:'第七章',topic:'三个代表',diff:1,
+   q:'贯彻"三个代表"重要思想，关键在坚持？',
+   opts:['与时俱进','党的先进性','执政为民','党的阶级性'],
+   ans:[0],explain:'关键=与时俱进，核心=党的先进性，本质=执政为民。'},
+  {id:54,type:'single',ch:'第七章',topic:'三个代表',diff:1,
+   q:'贯彻"三个代表"重要思想，本质在坚持？',
+   opts:['与时俱进','党的先进性','执政为民','不断创新'],
+   ans:[2],explain:'同上。本质=执政为民。记忆口诀：关时、核先、本为民。'},
+  {id:55,type:'multi',ch:'第七章',topic:'三个代表',diff:2,
+   q:'始终做到"三个代表"，是我们党的？',
+   opts:['立党之本','执政之基','力量之源','强国之路','根本保证'],
+   ans:[0,1,2],explain:'"三个代表"=立党之本+执政之基+力量之源。强国之路=改革开放，立国之本=四项基本原则。'},
+  {id:56,type:'single',ch:'第七章',topic:'党建',diff:2,
+   q:'加强党的建设，必须放在首位的是？',
+   opts:['思想建设','组织建设','作风建设','制度建设'],
+   ans:[0],explain:'着重从思想上建设党，是毛泽东党建思想的核心和显著特点。'},
+  {id:57,type:'judge',ch:'第七章',topic:'三个代表',diff:2,
+   q:'贯彻"三个代表"重要思想，核心在坚持与时俱进。',
+   ans:[1],explain:'（错误）核心是坚持党的先进性，关键才是坚持与时俱进。'},
+
+  // ===== 第八章：科学发展观 =====
+  {id:58,type:'single',ch:'第八章',topic:'科学发展观',diff:1,
+   q:'科学发展观的第一要义是？',
+   opts:['发展','改革','创新','以人为本'],
+   ans:[0],explain:'第一要义=发展，核心=以人为本，基本要求=全面协调可持续，根本方法=统筹兼顾。'},
+  {id:59,type:'single',ch:'第八章',topic:'科学发展观',diff:1,
+   q:'科学发展观的核心立场是？',
+   opts:['推动经济社会发展','以人为本','全面协调可持续','统筹兼顾'],
+   ans:[1],explain:'核心立场=以人为本。'},
+  {id:60,type:'multi',ch:'第八章',topic:'科学发展观',diff:1,
+   q:'科学发展观的主要内容有？',
+   opts:['第一要义是发展','核心是以人为本','基本要求是全面协调可持续','根本方法是统筹兼顾'],
+   ans:[0,1,2,3],explain:'四个维度全选。'},
+  {id:61,type:'single',ch:'第八章',topic:'生态文明',diff:2,
+   q:'生态文明建设首次被纳入中国特色社会主义事业总体布局是在？',
+   opts:['党的十六大','党的十七大','党的十八大','党的十九大'],
+   ans:[2],explain:'2012年十八大将生态文明纳入"五位一体"总体布局。'},
+  {id:62,type:'single',ch:'第八章',topic:'和谐社会',diff:2,
+   q:'构建社会主义和谐社会的根本出发点和落脚点是？',
+   opts:['科学发展','以人为本','改革开放','民主法治'],
+   ans:[1],explain:'以人为本=出发点和落脚点。科学发展=工作方针，改革开放=工作动力，民主法治=工作保证。'},
+  {id:63,type:'multi',ch:'第八章',topic:'和谐社会',diff:2,
+   q:'社会主义和谐社会的总体特征包括？',
+   opts:['民主法治、公平正义','诚信友爱、充满活力','安定有序','人与自然和谐相处','绝对平均'],
+   ans:[0,1,2,3],explain:'六大特征。E×和谐社会不是绝对平均主义。'},
+
+  // ===== 第九~十二章：政治、文化、祖国统一 =====
+  {id:64,type:'single',ch:'第九章',topic:'国体政体',diff:1,
+   q:'我国的国体是？',
+   opts:['人民民主专政','人民代表大会制度','中国共产党领导的多党合作和政治协商制度','民族区域自治制度'],
+   ans:[0],explain:'国体=人民民主专政（国家性质）。政体=人民代表大会制度（根本政治制度）。'},
+  {id:65,type:'single',ch:'第九章',topic:'国体政体',diff:2,
+   q:'我国的根本政治制度是？',
+   opts:['人民民主专政','人民代表大会制度','中国共产党领导的多党合作和政治协商制度','民族区域自治制度'],
+   ans:[1],explain:'根本政治制度=人民代表大会制度。多党合作制度、民族区域自治制度是基本政治制度。'},
+  {id:66,type:'single',ch:'第九章',topic:'民主政治',diff:2,
+   q:'社会主义民主政治的本质和核心是？',
+   opts:['民主集中制','共产党的领导','人民当家作主','坚持社会主义道路'],
+   ans:[2],explain:'人民当家作主是社会主义民主政治的本质和核心。党的领导是根本保证，依法治国是基本方略。'},
+  {id:67,type:'single',ch:'第九章',topic:'依法治国',diff:2,
+   q:'加强社会主义法制建设的基本前提是？',
+   opts:['有法可依','有法必依','执法必严','违法必究'],
+   ans:[0],explain:'有法可依=前提，有法必依=中心环节，执法必严=关键，违法必究=保障。'},
+  {id:68,type:'single',ch:'第九章',topic:'依法治国',diff:2,
+   q:'加强社会主义法制的关键是？',
+   opts:['有法可依','有法必依','执法必严','违法必究'],
+   ans:[2],explain:'执法必严=关键。注意与上一题的区分。'},
+  {id:69,type:'single',ch:'第九章',topic:'民主党派',diff:1,
+   q:'我国的民主党派是？',
+   opts:['执政党','参政党','在野党','反对党'],
+   ans:[1],explain:'中国共产党是执政党，民主党派是参政党，不是在野党或反对党。'},
+  {id:70,type:'multi',ch:'第九章',topic:'政协',diff:2,
+   q:'人民政协的主要职能是？',
+   opts:['政治协商','民主监督','参政议政','制定法律'],
+   ans:[0,1,2],explain:'政协三大职能=政治协商+民主监督+参政议政。制定法律是人大职能。'},
+  {id:71,type:'single',ch:'第十章',topic:'核心价值',diff:2,
+   q:'社会主义核心价值体系的灵魂是？',
+   opts:['中国特色社会主义共同理想','民族精神和时代精神','马克思主义指导思想','社会主义荣辱观'],
+   ans:[2],explain:'灵魂=马克思主义指导思想，主题=共同理想，精髓=两种精神，基础=荣辱观。'},
+  {id:72,type:'single',ch:'第十章',topic:'核心价值',diff:2,
+   q:'社会主义核心价值体系的主题是？',
+   opts:['马克思主义指导思想','中国特色社会主义共同理想','民族精神和时代精神','社会主义荣辱观'],
+   ans:[1],explain:'主题=共同理想。灵魂/主题/精髓/基础一一对应不能混淆。'},
+  {id:73,type:'judge',ch:'第十章',topic:'核心价值观',diff:2,
+   q:'"富强、民主、文明、和谐"是社会主义核心价值观在社会层面的价值取向。',
+   ans:[1],explain:'（错误）这是国家层面的价值目标。社会层面是"自由、平等、公正、法治"。'},
+  {id:74,type:'single',ch:'第十章',topic:'文化建设',diff:2,
+   q:'中国特色社会主义文化建设的重要内容和中心环节是？',
+   opts:['精神文明建设','思想道德建设','党的建设','全民素质的提高'],
+   ans:[1],explain:'思想道德建设是重要内容和中心环节，决定着精神文明建设的性质和方向。'},
+  {id:75,type:'single',ch:'第十一章',topic:'和谐社会',diff:1,
+   q:'（ ）是中国特色社会主义的本质属性。',
+   opts:['现代化','社会和谐','按劳分配','公有制'],
+   ans:[1],explain:'社会和谐是中国特色社会主义的本质属性。'},
+  {id:76,type:'single',ch:'第十一章',topic:'民生',diff:2,
+   q:'民生之本是什么？',
+   opts:['就业','教育','医疗','住房'],
+   ans:[0],explain:'就业是民生之本，教育公平是社会公平的重要基础。'},
+  {id:77,type:'single',ch:'第十二章',topic:'台湾问题',diff:1,
+   q:'台湾问题的实质是？',
+   opts:['中国的内政问题','中美关系的核心问题','历史遗留的殖民地问题','国际争端问题'],
+   ans:[0],explain:'台湾问题是中国内战遗留问题，实质是中国的内政问题，不容外国干涉。'},
+  {id:78,type:'single',ch:'第十二章',topic:'台湾问题',diff:2,
+   q:'实现两岸和平统一的基础和前提是？',
+   opts:['坚持一个中国的原则','一国两制','和平统一','加强两岸经济交流'],
+   ans:[0],explain:'一个中国原则是"一国两制"的核心，是发展两岸关系和实现和平统一的基础和前提。'},
+
+  // ===== 第十三~十五章：外交、依靠力量、领导核心 =====
+  {id:79,type:'single',ch:'第十三章',topic:'时代主题',diff:1,
+   q:'邓小平提出当今时代的主题是？',
+   opts:['毛泽东','邓小平','江泽民','胡锦涛'],
+   ans:[1],explain:'邓小平提出和平与发展是当今世界两大主题。毛泽东时代是战争与革命。'},
+  {id:80,type:'single',ch:'第十三章',topic:'外交',diff:2,
+   q:'我国处理同其他国家之间关系的基本准则是？',
+   opts:['社会制度的性质','国家利益','意识形态','和平共处五项原则'],
+   ans:[3],explain:'国家间关系基本准则=和平共处五项原则。根本原则=独立自主。'},
+  {id:81,type:'multi',ch:'第十三章',topic:'国际局势',diff:2,
+   q:'当前和今后一个时期国际局势发展的基本态势是？',
+   opts:['总体和平、局部战争','总体缓和、局部紧张','总体稳定、局部动荡','总体发展、局部倒退'],
+   ans:[0,1,2],explain:'"三个总体、三个局部"是标准表述：总体和平局部战争+总体缓和局部紧张+总体稳定局部动荡。'},
+  {id:82,type:'single',ch:'第十四章',topic:'领导阶级',diff:1,
+   q:'我国国家的领导阶级是？',
+   opts:['农民阶级','工人阶级','知识分子','新社会阶层'],
+   ans:[1],explain:'工人阶级是国家的领导阶级。农民阶级是人数最多的依靠力量。知识分子是工人阶级的一部分。'},
+  {id:83,type:'multi',ch:'第十四章',topic:'民族政策',diff:2,
+   q:'社会主义时期处理民族问题的基本原则是？',
+   opts:['维护祖国统一，反对民族分裂','坚持民族平等','坚持民族团结','坚持各民族共同繁荣'],
+   ans:[0,1,2,3],explain:'四项全选。其中民族平等是政治前提和基础+民族政策基石；民族团结是根本保证；共同繁荣是根本出发点和归宿。'},
+  {id:84,type:'single',ch:'第十四章',topic:'民族政策',diff:2,
+   q:'解决民族问题的根本出发点和归宿是？',
+   opts:['民族区域自治','民族平等','民族团结','各民族共同繁荣'],
+   ans:[3],explain:'根本出发点和归宿=各民族共同繁荣。政治前提和基础=民族平等。根本保证=民族团结。'},
+  {id:85,type:'single',ch:'第十五章',topic:'党的宗旨',diff:1,
+   q:'中国共产党的宗旨是？',
+   opts:['实现社会主义现代化','坚持党的基本路线','全心全意为人民服务','实现共产主义'],
+   ans:[2],explain:'全心全意为人民服务是党的根本宗旨。实现共产主义是最高纲领。'},
+  {id:86,type:'single',ch:'第十五章',topic:'党的阶级基础',diff:1,
+   q:'中国共产党的阶级基础是？',
+   opts:['农民阶级','工人阶级','知识分子','民主人士'],
+   ans:[1],explain:'中国共产党是中国工人阶级的先锋队，阶级基础是工人阶级。'},
+  {id:87,type:'multi',ch:'第十五章',topic:'党建',diff:2,
+   q:'中国共产党的三大优良作风是？',
+   opts:['理论联系实际','密切联系群众','批评与自我批评','艰苦奋斗','民主集中制'],
+   ans:[0,1,2],explain:'三大优良作风=理论联系实际+密切联系群众+批评与自我批评。D、E不是三大作风。'},
+  {id:88,type:'single',ch:'第十五章',topic:'组织原则',diff:1,
+   q:'中国共产党的根本组织原则是？',
+   opts:['集体领导制','分工负责制','民主集中制','代表大会制'],
+   ans:[2],explain:'民主集中制是党的根本组织原则。'},
+
+  // ===== 补充：更多题目确保160题题库 =====
+  {id:89,type:'single',ch:'导论',topic:'马中化含义',diff:2,
+   q:'马克思主义中国化的基本要求是？',
+   opts:['把马克思主义基本原理同中国具体实际相结合','把马克思主义同外国经验相结合','反对教条主义和经验主义','坚持调查研究和走群众路线'],
+   ans:[0],explain:'马克思主义中国化的本质就是把马克思主义基本原理同中国具体实际相结合。'},
+  {id:90,type:'single',ch:'第二章',topic:'革命动力',diff:2,
+   q:'新民主主义革命最基本的动力是？',
+   opts:['农民阶级','城市小资产阶级','民族资产阶级','无产阶级'],
+   ans:[3],explain:'无产阶级是中国革命最基本的动力。农民阶级是主力军。'},
+  {id:91,type:'single',ch:'第二章',topic:'军队宗旨',diff:1,
+   q:'人民军队的唯一宗旨是？',
+   opts:['坚持党对军队的绝对领导','全心全意为人民服务','政治合格、军事过硬','保卫社会主义祖国'],
+   ans:[1],explain:'全心全意为人民服务是人民军队的唯一宗旨。'},
+  {id:92,type:'single',ch:'第二章',topic:'著作定位',diff:2,
+   q:'标志着新民主主义革命理论成为科学理论体系的著作是？',
+   opts:['《星星之火，可以燎原》','《新民主主义论》','《中国革命和中国共产党》','《论联合政府》'],
+   ans:[1],explain:'1940年《新民主主义论》系统阐述了新民主主义革命理论，标志着该理论成为科学体系。'},
+  {id:93,type:'single',ch:'第二章',topic:'政治纲领',diff:2,
+   q:'新民主主义国家的政体是？',
+   opts:['无产阶级专政','人民代表大会制度','各革命阶级联合专政','民主集中制'],
+   ans:[1],explain:'新民主主义国家国体=各革命阶级联合专政，政体=民主集中制的人民代表大会制度。'},
+  {id:94,type:'single',ch:'第三章',topic:'经济成分',diff:2,
+   q:'在新民主主义五种经济成分中，居于领导地位的是？',
+   opts:['国营经济','合作社经济','个体经济','私人资本主义经济'],
+   ans:[0],explain:'社会主义性质的国营经济居于领导地位。个体经济占最大比重但不起领导作用。'},
+  {id:95,type:'single',ch:'第三章',topic:'改造完成',diff:2,
+   q:'标志着我国剥削阶级和剥削制度被消灭的事件是？',
+   opts:['中华人民共和国成立','全国大陆统一','三大改造完成','土地改革完成'],
+   ans:[2],explain:'三大改造完成意味着生产资料私有制转变为公有制，剥削阶级和剥削制度随之被消灭。'},
+  {id:96,type:'single',ch:'第四章',topic:'论十大关系',diff:2,
+   q:'1956年，毛泽东发表的重要讲话中提出"调动一切积极因素为社会主义事业服务"的基本方针，这篇讲话是？',
+   opts:['《不要四面出击》','《论人民民主专政》','《论十大关系》','《关于正确处理人民内部矛盾的问题》'],
+   ans:[2],explain:'1956年4月《论十大关系》标志着开始探索中国自己的社会主义建设道路，提出"以苏为鉴"。'},
+
+  // 易混概念专项训练
+  {id:101,type:'single',ch:'导论',topic:'易混概念',diff:3,
+   q:'马克思主义中国化理论成果的精髓是？',
+   opts:['解放思想','实事求是','与时俱进','求真务实'],
+   ans:[1],explain:'精髓=实事求是（仅实事求是！）。科学发展观的精神实质才是"解放思想、实事求是、与时俱进、求真务实"四句话。'},
+  {id:102,type:'single',ch:'导论',topic:'易混概念',diff:3,
+   q:'科学发展观最鲜明的精神实质是？',
+   opts:['实事求是','解放思想、实事求是','解放思想、实事求是、与时俱进','解放思想、实事求是、与时俱进、求真务实'],
+   ans:[3],explain:'科学发展观最鲜明的精神实质是四句话。马克思主义中国化理论成果的精髓只有"实事求是"一句话。'},
+  {id:103,type:'single',ch:'第六章',topic:'易混概念',diff:3,
+   q:'社会主义的根本任务是？',
+   opts:['实现共同富裕','发展生产力','消灭剥削','消除两极分化'],
+   ans:[1],explain:'根本任务=发展生产力。最终目标/结果=共同富裕。注意区分"任务"和"目标"。'},
+  {id:104,type:'single',ch:'第六章',topic:'易混概念',diff:3,
+   q:'四项基本原则的核心是？',
+   opts:['坚持社会主义道路','坚持人民民主专政','坚持中国共产党的领导','坚持马列主义毛泽东思想'],
+   ans:[2],explain:'四项基本原则核心=坚持中国共产党的领导。'},
+  {id:105,type:'single',ch:'第十四章',topic:'易混概念',diff:3,
+   q:'解决民族问题中，民族团结和各民族共同繁荣的政治前提和基础是？',
+   opts:['民族发展','民族自治','民族平等','民族独立'],
+   ans:[2],explain:'民族平等=政治前提和基础+民族政策基石。民族团结=根本保证。共同繁荣=根本出发点和归宿。'},
+  {id:106,type:'judge',ch:'导论',topic:'易混概念',diff:2,
+   q:'马克思主义最重要的理论品质是实事求是。',
+   ans:[1],explain:'（错误）理论品质=与时俱进。精髓=实事求是。两个概念不同。'},
+  {id:107,type:'judge',ch:'第六章',topic:'易混概念',diff:3,
+   q:'在当代中国，坚持中国特色社会主义理论体系就是真正坚持马克思主义。',
+   ans:[0],explain:'（正确）中特理论体系坚持了马克思主义的立场、观点、方法，坚持了与时俱进的理论品质，是马克思主义在当代中国的具体体现。'},
+  {id:108,type:'judge',ch:'第六章',topic:'发展',diff:2,
+   q:'坚持发展是硬道理，就是要坚持以GDP为唯一标准来衡量经济发展。',
+   ans:[1],explain:'（错误）发展是全面协调可持续的发展，不是唯GDP论。科学发展观明确反对"唯GDP论"。'},
+  {id:109,type:'single',ch:'第六章',topic:'三步骤',diff:2,
+   q:'党的十三大正式提出的"三步走"战略中，到21世纪中叶的目标是？',
+   opts:['解决温饱','实现小康','达到中等发达国家水平','超过发达国家水平'],
+   ans:[2],explain:'三步走：第一步(1990年)解决温饱→第二步(20世纪末)实现小康→第三步(21世纪中叶)达到中等发达国家水平。'},
+  {id:110,type:'single',ch:'第六章',topic:'对外开放',diff:2,
+   q:'20世纪90年代中国逐步形成的对外开放格局特点是？',
+   opts:['全方位、多层次、宽领域','全方位、多渠道、宽领域','全方位、多层次、高水平','多渠道、多层次、宽领域'],
+   ans:[0],explain:'90年代格局=全方位+多层次+宽领域。"高水平"是新时代提出的新要求。'},
+  {id:111,type:'multi',ch:'第六章',topic:'对外开放',diff:2,
+   q:'进入20世纪90年代，我国形成的对外开放格局是？',
+   opts:['多渠道','全方位','多层次','宽领域'],
+   ans:[1,2,3],explain:'全方位+多层次+宽领域。A"多渠道"不是标准表述。'},
+  {id:112,type:'single',ch:'第六章',topic:'市场经济',diff:2,
+   q:'确立我国经济体制改革目标的关键是正确认识和处理？',
+   opts:['计划与市场的关系','改革与开放的关系','发展与稳定的关系','速度与效益的关系'],
+   ans:[0],explain:'正确认识和处理计划与市场的关系，是确立经济体制改革目标的核心问题。'},
+  {id:113,type:'single',ch:'第六章',topic:'分配制度',diff:2,
+   q:'社会主义公有制经济中个人消费品分配的基本原则是？',
+   opts:['按需分配','按资分配','按劳分配','按生产要素分配'],
+   ans:[2],explain:'公有制经济中按劳分配是基本原则。按劳分配的前提条件=社会主义生产资料公有制。'},
+  {id:114,type:'single',ch:'第七章',topic:'改革性质',diff:2,
+   q:'当前我国改革的性质是？',
+   opts:['经济体制的自我完善','社会主义制度的根本性变革','社会主义制度的自我完善和发展','经济模式的自我完善'],
+   ans:[2],explain:'改革是社会主义制度的自我完善和发展，不是改变社会主义基本制度，不是根本性变革。'},
+  {id:115,type:'judge',ch:'第七章',topic:'改革',diff:1,
+   q:'改革是社会主义社会发展的直接动力，是中国的第二次革命。',
+   ans:[0],explain:'（正确）改革是中国的第二次革命（第一次革命是新民主主义革命和社会主义革命），是社会主义制度的自我完善和发展。'},
+  {id:116,type:'single',ch:'第八章',topic:'新农村',diff:2,
+   q:'社会主义新农村建设的总要求中不包括？',
+   opts:['生产发展','生活宽裕','乡风文明','村民自治'],
+   ans:[3],explain:'新农村总要求=生产发展+生活宽裕+乡风文明+村容整洁+管理民主。"村民自治"是基层民主的内容但不是新农村五句话之一。'},
+  {id:117,type:'single',ch:'第八章',topic:'创新',diff:1,
+   q:'国家发展战略的核心，提高综合国力的关键是？',
+   opts:['走可持续发展道路','促进地区经济协调发展','提高自主创新能力，建设创新型国家','加强人才工作'],
+   ans:[2],explain:'十七大指出：提高自主创新能力，建设创新型国家，是国家发展战略的核心，是提高综合国力的关键。'},
+  {id:118,type:'single',ch:'第四章',topic:'矛盾学说',diff:2,
+   q:'国家政治生活的主题是？',
+   opts:['正确处理人民内部矛盾','正确处理敌我矛盾','正确划分两类不同性质的矛盾','正确处理阶级矛盾'],
+   ans:[0],explain:'毛泽东在《关于正确处理人民内部矛盾的问题》中指出，正确处理人民内部矛盾是社会主义国家政治生活的主题。'},
+  {id:119,type:'single',ch:'第四章',topic:'工业化',diff:2,
+   q:'毛泽东提出发展国民经济必须？',
+   opts:['以农业为基础','以工业为基础','以重工业为基础','以轻工业为基础'],
+   ans:[0],explain:'发展国民经济以农业为基础，以工业为主导，以农、轻、重为序。'},
+  {id:120,type:'single',ch:'第十二章',topic:'和平统一',diff:2,
+   q:'解决台湾问题，实现祖国统一，我们寄希望于？',
+   opts:['国际社会','台湾当局','台湾人民','综合国力的增强'],
+   ans:[2],explain:'解决台湾问题，实现祖国的完全统一，我们寄希望于台湾人民。'},
+  {id:121,type:'single',ch:'第十三章',topic:'外交方针',diff:2,
+   q:'新中国成立初期，毛泽东提出的三大外交方针不包括？',
+   opts:['"另起炉灶"','"打扫干净屋子再请客"','"一边倒"','"一条线"'],
+   ans:[3],explain:'建国初三大外交方针="另起炉灶"+"打扫干净屋子再请客"+"一边倒"。"一条线"是70年代的战略。'},
+  {id:122,type:'multi',ch:'第十三章',topic:'外交格局',diff:2,
+   q:'新中国成立初期，毛泽东提出的外交方针有？',
+   opts:['"另起炉灶"','"打扫干净屋子再请客"','"一边倒"','"一条线"'],
+   ans:[0,1,2],explain:'建国初三大方针。D"一条线"是70年代针对苏联的外交战略，不是建国初期的。'},
+  {id:123,type:'judge',ch:'第十一章',topic:'和谐社会',diff:3,
+   q:'构建社会主义和谐社会，必须坚持以人为本，这是构建社会主义和谐社会的工作动力。',
+   ans:[1],explain:'（错误）以人为本是构建和谐社会的根本出发点和落脚点。改革开放才是工作动力。'},
+  {id:124,type:'judge',ch:'第八章',topic:'生态文明',diff:2,
+   q:'改善生态环境必然会阻碍生产力的发展。',
+   ans:[1],explain:'（错误）绿水青山就是金山银山。保护生态环境就是保护生产力，改善生态环境就是发展生产力。'},
+  {id:125,type:'judge',ch:'第一章',topic:'活的灵魂',diff:2,
+   q:'毛泽东思想活的灵魂包括：实事求是、群众路线、党的建设。',
+   ans:[1],explain:'（错误）活的灵魂=实事求是+群众路线+独立自主。党的建设属于三大法宝而非活的灵魂。'},
+  {id:126,type:'judge',ch:'第二章',topic:'三大法宝',diff:3,
+   q:'毛泽东在《论联合政府》中提出了"三大法宝"的思想。',
+   ans:[1],explain:'（错误）三大法宝出自《〈共产党人〉发刊词》（1939年）。《论联合政府》（1945年七大）提出了三大优良作风。'},
+  {id:127,type:'single',ch:'第二章',topic:'党建',diff:3,
+   q:'毛泽东关于党的建设思想最核心的内容和最主要的特点是？',
+   opts:['着重从思想上建设党','着重从作风上建设党','着重从组织上建设党','着重从制度上建设党'],
+   ans:[0],explain:'把思想建设放在首位，是毛泽东党建思想的核心和显著特点。'},
+  {id:128,type:'single',ch:'第三章',topic:'手工业',diff:2,
+   q:'我国对手工业进行社会主义改造时采取的方针是？',
+   opts:['积极领导，稳步前进','鼓励、支持、扶持','利用、限制、改造','自愿互利、典型示范'],
+   ans:[0],explain:'手工业改造方针=积极领导+稳步前进。农业改造原则=自愿互利+典型示范+国家帮助。对资本主义工商业=利用、限制、改造。'},
+  {id:129,type:'single',ch:'第三章',topic:'赎买形式',diff:3,
+   q:'全行业公私合营后对资本家采取的赎买政策是？',
+   opts:['四马分肥','定息','加工订货','国家资本主义'],
+   ans:[1],explain:'个别企业公私合营→"四马分肥"；全行业公私合营→"定息"。两个赎买形式对应不同阶段。'},
+  {id:130,type:'judge',ch:'第三章',topic:'社会矛盾',diff:2,
+   q:'社会主义社会的基本矛盾是对抗性的矛盾。',
+   ans:[1],explain:'（错误）社会主义的基本矛盾是非对抗性的矛盾，具有"又相适应又相矛盾"的特点，可以通过社会主义制度本身不断得到解决。旧社会的基本矛盾才是对抗性的。'},
+  {id:131,type:'single',ch:'第十章',topic:'教育方针',diff:2,
+   q:'邓小平提出的我国教育的发展方向是？',
+   opts:['面向现代化、面向世界、面向未来','面向现代化、面向大众、面向世界','面向世界、面向大众、面向未来','面向现代化、面向大众、面向未来'],
+   ans:[0],explain:'"三个面向"标准表述=面向现代化+面向世界+面向未来。'},
+  {id:132,type:'single',ch:'第十二章',topic:'香港回归',diff:1,
+   q:'中华人民共和国对香港恢复行使主权是在？',
+   opts:['1990年7月1日','1993年3月13日','1997年7月1日','1999年12月20日'],
+   ans:[2],explain:'1997年7月1日香港回归。1999年12月20日澳门回归。'},
+  {id:133,type:'single',ch:'第十二章',topic:'反分裂法',diff:2,
+   q:'《反分裂国家法》通过的时间是？',
+   opts:['2000年10月','2003年3月','2005年3月','2006年4月'],
+   ans:[2],explain:'2005年3月十届全国人大三次会议通过《反分裂国家法》。'},
+  {id:134,type:'single',ch:'第十三章',topic:'外交宗旨',diff:2,
+   q:'我国外交政策的宗旨是？',
+   opts:['反对霸权主义和强权政治','维护世界和平，促进共同发展','发展对外经济关系','建立公正合理的国际政治经济新秩序'],
+   ans:[1],explain:'外交宗旨=维护世界和平，促进共同发展。根本原则=独立自主。基本立足点=加强同发展中国家合作。'},
+  {id:135,type:'multi',ch:'第十五章',topic:'党建',diff:2,
+   q:'当前推进党的建设新的伟大工程的主线是加强党的？',
+   opts:['执政能力建设','反腐倡廉建设','制度建设','先进性建设'],
+   ans:[0,3],explain:'主线=执政能力建设+先进性建设。反腐倡廉建设和制度建设是党建的重要内容但不是主线。'},
+  {id:136,type:'single',ch:'第十五章',topic:'领导方式',diff:2,
+   q:'中国共产党对中国社会主义事业的领导，主要是？',
+   opts:['经济上的领导','政治上的领导','文化上的领导','军事上的领导'],
+   ans:[1],explain:'党的领导主要是政治上的领导，还包括思想领导和组织领导。'},
+  {id:137,type:'multi',ch:'第十五章',topic:'领导方式',diff:2,
+   q:'中国共产党的领导包括？',
+   opts:['政治领导','思想领导','组织领导','经济领导'],
+   ans:[0,1,2],explain:'党的领导=政治领导+思想领导+组织领导。不包括经济领导。'},
+  {id:138,type:'single',ch:'第六章',topic:'十五大',diff:2,
+   q:'正式提出党在社会主义初级阶段的基本纲领是在？',
+   opts:['十一届三中全会','十四大','十五大','邓小平南方谈话'],
+   ans:[2],explain:'十五大正式提出了建设中国特色社会主义的经济、政治、文化的基本纲领。'},
+  {id:139,type:'single',ch:'第八章',topic:'经济发展方式',diff:2,
+   q:'党的十七大报告提出要转变？',
+   opts:['经济体制方式','经济增长方式','经济成长方式','经济发展方式'],
+   ans:[3],explain:'十七大首次提出转变"经济发展方式"，替代了过去"经济增长方式"的提法，体现了科学发展理念。'},
+  {id:140,type:'judge',ch:'第六章',topic:'社会主义',diff:2,
+   q:'社会主义与资本主义的本质区别在于是否实行市场经济。',
+   ans:[1],explain:'（错误）社会主义与资本主义的本质区别是实现共同富裕。市场经济不属于社会基本制度范畴，计划和市场都是经济手段。'},
+  {id:141,type:'single',ch:'第一章',topic:'提出时间',diff:2,
+   q:'毛泽东在（ ）文章中初步界定了中国共产党人的思想路线的基本含义？',
+   opts:['《中国社会各阶级的分析》','《井冈山的斗争》','《反对本本主义》','《改造我们的学习》'],
+   ans:[2],explain:'《反对本本主义》首次提出"没有调查，没有发言权"，初步界定思想路线。《改造我们的学习》是科学界定实事求是含义。'},
+  {id:142,type:'single',ch:'第一章',topic:'实事求是界定',diff:2,
+   q:'毛泽东在（ ）中对"实事求是"作出了马克思主义的科学界定？',
+   opts:['《改造我们的学习》','《实践论》','《矛盾论》','《反对本本主义》'],
+   ans:[0],explain:'《改造我们的学习》："实事"=客观事物，"是"=规律性，"求"=去研究。注意与上一题区分。'},
+
+  // 最后补充：多选题和判断题
+  {id:143,type:'multi',ch:'第三章',topic:'改造经验',diff:3,
+   q:'我国对资本主义工商业社会主义改造的成功经验有？',
+   opts:['用非对抗性方法解决对抗性矛盾','创造了由低级到高级的多种国家资本主义形式','把对企业的改造同对人的改造结合起来','和平赎买','逐步过渡'],
+   ans:[0,1,2,3,4],explain:'五项全选。中国对资本主义工商业改造是社会主义历史上的创举。'},
+  {id:144,type:'multi',ch:'第六章',topic:'市场经济',diff:3,
+   q:'邓小平关于社会主义市场经济理论的内涵包括？',
+   opts:['市场经济是资源配置的一种方式','市场经济不具有社会制度的属性','市场调节可以和计划调节相结合','市场和计划都是经济手段'],
+   ans:[0,1,2,3],explain:'四项全选。这是邓小平市场经济理论的核心内容。'},
+  {id:145,type:'judge',ch:'第一章',topic:'思想路线',diff:3,
+   q:'党的思想路线的实质和核心是解放思想。',
+   ans:[1],explain:'（错误）党的思想路线的实质和核心是实事求是。解放思想是邓小平对思想路线的贡献。'},
+];
+
+// ===================== APP STATE =====================
+const STORAGE_KEY = 'maogai_exam_system';
+let appState = {
+  exams: [],           // history of completed exams
+  errors: [],          // all wrong answers {qid, date, topic}
+  currentExam: null,   // {questions[], answers[], startTime}
+  currentQIdx: 0,      // index in shuffled exam
+  flagged: new Set()   // flagged question indices
+};
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    appState.exams = parsed.exams || [];
+    appState.errors = parsed.errors || [];
+    appState.flagged = new Set();
+  }
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    exams: appState.exams.slice(-20),
+    errors: appState.errors
+  }));
+  updateErrorBadge();
+}
+function resetAll() {
+  if (confirm('确定要清空所有考试记录和错题数据吗？此操作不可恢复。')) {
+    appState.exams = [];
+    appState.errors = [];
+    localStorage.removeItem(STORAGE_KEY);
+    showPage('home');
+    refreshHome();
+    updateErrorBadge();
+  }
+}
+
+// ===================== EXAM GENERATION =====================
+function generateExam() {
+  // Step 1: Analyze error patterns
+  const errorTopics = {};
+  const errorChapters = {};
+  appState.errors.forEach(e => {
+    const q = QUESTION_BANK.find(q => q.id === e.qid);
+    if (q) {
+      errorTopics[q.topic] = (errorTopics[q.topic] || 0) + 1;
+      errorChapters[q.ch] = (errorChapters[q.ch] || 0) + 1;
+    }
+  });
+
+  // Step 2: For subsequent exams, bias towards weak areas
+  const isFirstExam = appState.exams.length === 0;
+
+  // Get all questions grouped by type
+  const singles = QUESTION_BANK.filter(q => q.type === 'single');
+  const multis = QUESTION_BANK.filter(q => q.type === 'multi');
+  const judges = QUESTION_BANK.filter(q => q.type === 'judge');
+
+  // Score each question: higher score = more likely to be selected
+  function questionScore(q) {
+    let score = 1;
+    // Base weight from error count on this topic
+    if (errorTopics[q.topic]) score += errorTopics[q.topic] * 3;
+    if (errorChapters[q.ch]) score += errorChapters[q.ch] * 2;
+    // Add some randomness
+    score += Math.random() * 3;
+    // Slight preference for higher difficulty on retests
+    if (!isFirstExam) score += q.diff * 0.5;
+    return score;
+  }
+
+  // Select questions with weighted random sampling
+  function selectQuestions(pool, count) {
+    const scored = pool.map(q => ({q, score: questionScore(q)}));
+    scored.sort((a, b) => b.score - a.score);
+    // Take top 70% by score, then shuffle to avoid always same order
+    const topN = Math.max(count, Math.floor(scored.length * 0.7));
+    const candidates = scored.slice(0, topN);
+    // Shuffle
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    return candidates.slice(0, count).map(c => c.q);
+  }
+
+  const selected = [
+    ...selectQuestions(singles, 25),
+    ...selectQuestions(multis, 10),
+    ...selectQuestions(judges, 10)
+  ];
+
+  // Shuffle within type groups to mix chapters
+  function shuffleGroup(arr, start, end) {
+    const group = arr.slice(start, end);
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+    for (let i = start; i < end; i++) arr[i] = group[i - start];
+  }
+  shuffleGroup(selected, 0, 25);
+  shuffleGroup(selected, 25, 35);
+  shuffleGroup(selected, 35, 45);
+
+  return selected;
+}
+
+// ===================== PAGES =====================
+function showPage(page) {
+  ['home','exam','result','analysis','errors','full-analysis'].forEach(p => {
+    document.getElementById('page-'+p).classList.add('hidden');
+  });
+  const el = document.getElementById('page-'+page);
+  if (el) el.classList.remove('hidden');
+
+  ['home','analysis','errors'].forEach(p => {
+    const btn = document.getElementById('nav-'+p);
+    if (btn) btn.classList.toggle('active', p === page);
+  });
+
+  if (page === 'home') refreshHome();
+  if (page === 'errors') renderErrors();
+  if (page === 'analysis') renderHistory();
+}
+
+// ===================== HOME =====================
+function refreshHome() {
+  document.getElementById('exam-round').textContent = appState.exams.length + 1;
+  const hint = document.getElementById('smart-hint');
+  if (appState.errors.length > 0) {
+    hint.textContent = '智能模式：将侧重你之前的薄弱知识点';
+    hint.style.color = 'var(--danger)';
+  } else {
+    hint.textContent = '随机模式：全面覆盖所有知识点';
+    hint.style.color = 'var(--text2)';
+  }
+  renderExamHistory();
+  renderChapterMastery();
+}
+
+function renderExamHistory() {
+  const div = document.getElementById('exam-history');
+  if (appState.exams.length === 0) {
+    div.innerHTML = '<p style="color:var(--text2)">尚未进行任何考试</p>';
+    return;
+  }
+  const last = appState.exams[appState.exams.length - 1];
+  div.innerHTML = '最近考试：<strong>' + last.score + '分</strong> (' +
+    new Date(last.date).toLocaleDateString() + ') | 共完成 <strong>' + appState.exams.length + '</strong> 次考试';
+}
+
+function renderChapterMastery() {
+  const div = document.getElementById('chapter-mastery');
+  const chapters = [...new Set(QUESTION_BANK.map(q => q.ch))];
+
+  // Calculate mastery per chapter
+  const chapterData = {};
+  chapters.forEach(ch => {
+    const chQuestions = QUESTION_BANK.filter(q => q.ch === ch);
+    const chErrors = appState.errors.filter(e => {
+      const q = QUESTION_BANK.find(q => q.id === e.qid);
+      return q && q.ch === ch;
+    });
+    const totalAttempts = chQuestions.length; // proxy
+    const errorCount = new Set(chErrors.map(e => e.qid)).size;
+    const mastery = Math.max(0, Math.min(100, Math.round((1 - errorCount / Math.max(chQuestions.length, 1)) * 100)));
+    chapterData[ch] = { mastery, errors: errorCount, total: chQuestions.length };
+  });
+
+  if (appState.errors.length === 0) {
+    div.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px">完成考试后，将显示各章节掌握度分析</p>';
+    return;
+  }
+
+  div.innerHTML = chapters.map(ch => {
+    const d = chapterData[ch];
+    const color = d.mastery >= 80 ? 'var(--success)' : d.mastery >= 50 ? 'var(--warning)' : 'var(--danger)';
+    return '<div class="chapter-bar">' +
+      '<span class="name">' + ch + '</span>' +
+      '<span class="bar-bg"><span class="bar-fill" style="width:' + d.mastery + '%;background:' + color + '"></span></span>' +
+      '<span class="pct" style="color:' + color + '">' + d.mastery + '%</span>' +
+      '</div>';
+  }).join('');
+}
+
+// ===================== EXAM =====================
+function startExam() {
+  appState.currentExam = {
+    questions: generateExam(),
+    answers: new Array(45).fill(null), // null=unanswered, [] for multi, [idx] for single/judge
+    startTime: Date.now(),
+    flagged: new Set()
+  };
+  // Init multi-select answers as empty arrays
+  appState.currentExam.questions.forEach((q, i) => {
+    if (q.type === 'multi') appState.currentExam.answers[i] = [];
+  });
+  appState.flagged = new Set();
+  appState.currentQIdx = 0;
+  showPage('exam');
+  updateTimer();
+  if (!appState._timerInterval) {
+    appState._timerInterval = setInterval(updateTimer, 1000);
+  }
+  renderQuestion();
+  renderProgress();
+}
+
+let _timerSeconds = 0;
+function updateTimer() {
+  if (!appState.currentExam) return;
+  const elapsed = Math.floor((Date.now() - appState.currentExam.startTime) / 1000);
+  _timerSeconds = elapsed;
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  const el = document.getElementById('timer');
+  if (el) el.textContent = '⏱ ' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function renderQuestion() {
+  const exam = appState.currentExam;
+  if (!exam) return;
+  const idx = appState.currentQIdx;
+  const q = exam.questions[idx];
+  const container = document.getElementById('question-container');
+  const typeLabel = q.type === 'single' ? '单选题' : q.type === 'multi' ? '多选题' : '判断题';
+  const typeClass = q.type === 'single' ? 'type-single' : q.type === 'multi' ? 'type-multi' : 'type-judge';
+  const inputType = q.type === 'multi' ? 'checkbox' : 'radio';
+  const answer = exam.answers[idx];
+
+  const isFlagged = appState.flagged.has(idx);
+
+  let html = '<div class="question-block">';
+  html += '<span class="question-num">第 ' + (idx + 1) + ' 题</span>';
+  html += '<span class="question-type ' + typeClass + '">' + typeLabel + '</span>';
+  if (isFlagged) html += ' <span style="color:var(--warning);font-size:.8em">已标记</span>';
+  html += '<div class="question-text">' + q.q + '</div>';
+
+  const labels = q.type === 'judge' ? ['正确', '错误'] :
+    ['A', 'B', 'C', 'D', 'E'].slice(0, q.opts.length);
+
+  q.opts.forEach((opt, oi) => {
+    let selClass = '';
+    if (q.type === 'multi') {
+      if (Array.isArray(answer) && answer.includes(oi)) selClass = ' selected';
+    } else {
+      if (answer !== null && answer[0] === oi) selClass = ' selected';
+    }
+    html += '<div class="option' + selClass + '" onclick="selectOption(' + idx + ',' + oi + ')">';
+    html += '<span class="option-label">' + labels[oi] + '.</span>';
+    html += '<input type="' + inputType + '" name="q' + idx + '" value="' + oi + '"' + (selClass ? ' checked' : '') + ' onclick="event.stopPropagation();selectOption(' + idx + ',' + oi + ')">';
+    html += '<span>' + opt + '</span>';
+    html += '</div>';
+  });
+
+  if (q.type === 'multi') {
+    html += '<p style="font-size:.8em;color:var(--text2);margin-top:4px">提示：本题为多选题，可选择多个答案</p>';
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+  document.getElementById('q-pos').textContent = (idx + 1) + '/45';
+  document.getElementById('btn-prev').style.visibility = idx === 0 ? 'hidden' : 'visible';
+  document.getElementById('btn-next').style.visibility = idx === 44 ? 'hidden' : 'visible';
+  updateAnsweredCount();
+}
+
+function selectOption(qIdx, optIdx) {
+  const exam = appState.currentExam;
+  const q = exam.questions[qIdx];
+  if (q.type === 'multi') {
+    if (!Array.isArray(exam.answers[qIdx])) exam.answers[qIdx] = [];
+    const arr = exam.answers[qIdx];
+    const pos = arr.indexOf(optIdx);
+    if (pos >= 0) arr.splice(pos, 1);
+    else arr.push(optIdx);
+  } else {
+    exam.answers[qIdx] = [optIdx];
+  }
+  renderQuestion();
+  renderProgress();
+}
+
+function flagQuestion() {
+  const idx = appState.currentQIdx;
+  if (appState.flagged.has(idx)) appState.flagged.delete(idx);
+  else appState.flagged.add(idx);
+  appState.currentExam.flagged = appState.flagged;
+  renderQuestion();
+  renderProgress();
+}
+
+function nextQuestion() {
+  if (appState.currentQIdx < 44) {
+    appState.currentQIdx++;
+    renderQuestion();
+    renderProgress();
+  }
+}
+function prevQuestion() {
+  if (appState.currentQIdx > 0) {
+    appState.currentQIdx--;
+    renderQuestion();
+    renderProgress();
+  }
+}
+
+function renderProgress() {
+  const exam = appState.currentExam;
+  if (!exam) return;
+  const dots = document.getElementById('progress-dots');
+  let html = '';
+  for (let i = 0; i < 45; i++) {
+    let cls = '';
+    if (i === appState.currentQIdx) cls = 'current';
+    const ans = exam.answers[i];
+    const answered = Array.isArray(ans) ? ans.length > 0 : ans !== null;
+    if (answered) cls += ' answered';
+    if (appState.flagged.has(i)) cls += ' flagged';
+    html += '<div class="progress-dot ' + cls + '" onclick="appState.currentQIdx=' + i + ';renderQuestion();renderProgress()" title="第'+(i+1)+'题">' + (i+1) + '</div>';
+  }
+  dots.innerHTML = html;
+}
+
+function updateAnsweredCount() {
+  const exam = appState.currentExam;
+  if (!exam) return;
+  let count = 0;
+  exam.answers.forEach(a => {
+    if (Array.isArray(a) && a.length > 0) count++;
+    else if (a !== null && !Array.isArray(a)) count++;
+    else if (a !== null && Array.isArray(a) && a.length > 0) count++;
+    else if (a !== null) count++;
+  });
+  // More accurate count
+  count = 0;
+  exam.answers.forEach(a => {
+    if (a === null) return;
+    if (Array.isArray(a) && a.length > 0) count++;
+    else if (!Array.isArray(a) && a !== null) count++;
+  });
+  document.getElementById('answered-count').textContent = count;
+  document.getElementById('flagged-count').textContent = appState.flagged.size;
+}
+
+// ===================== SUBMIT =====================
+function submitExam() {
+  const exam = appState.currentExam;
+  if (!exam) return;
+
+  const unanswered = exam.answers.filter(a => {
+    if (a === null) return true;
+    if (Array.isArray(a) && a.length === 0) return true;
+    return false;
+  }).length;
+
+  if (unanswered > 0) {
+    if (!confirm('还有 ' + unanswered + ' 题未作答，确定交卷吗？')) return;
+  }
+
+  // Grade
+  let correctCount = 0;
+  const details = [];
+  const newErrors = [];
+
+  exam.questions.forEach((q, i) => {
+    const userAns = exam.answers[i] || [];
+    const correctAns = q.ans;
+    let isCorrect = false;
+
+    if (q.type === 'multi') {
+      const userSet = new Set(userAns || []);
+      const correctSet = new Set(correctAns);
+      isCorrect = userSet.size === correctSet.size && [...userSet].every(v => correctSet.has(v));
+      if (userAns.length === 1 && userAns[0] === null) isCorrect = false;
+    } else {
+      isCorrect = (userAns[0] !== undefined && userAns[0] !== null && userAns[0] === correctAns[0]);
+    }
+
+    if (isCorrect) correctCount++;
+    else {
+      newErrors.push({
+        qid: q.id,
+        date: Date.now(),
+        topic: q.topic,
+        ch: q.ch
+      });
+    }
+
+    details.push({ q, userAns: userAns || [], isCorrect });
+  });
+
+  // Calculate scores
+  const singleCorrect = details.slice(0, 25).filter(d => d.isCorrect).length;
+  const multiCorrect = details.slice(25, 35).filter(d => d.isCorrect).length;
+  const judgeCorrect = details.slice(35, 45).filter(d => d.isCorrect).length;
+  const totalScore = singleCorrect * 2 + multiCorrect * 3 + judgeCorrect * 2;
+
+  const result = {
+    date: Date.now(),
+    score: totalScore,
+    correct: correctCount,
+    total: 45,
+    singleCorrect, multiCorrect, judgeCorrect,
+    details,
+    timeSeconds: _timerSeconds
+  };
+
+  appState.exams.push(result);
+  appState.errors.push(...newErrors);
+  saveState();
+
+  // Reset exam state
+  appState.currentExam = null;
+  appState.flagged = new Set();
+
+  // Show result
+  showResult(result);
+}
+
+function showResult(result) {
+  showPage('result');
+  const pct = Math.round(result.score / 100 * 100);
+  let cls = pct >= 80 ? 'excellent' : pct >= 60 ? 'good' : pct >= 40 ? 'fair' : 'poor';
+
+  document.getElementById('score-display').innerHTML =
+    '<div class="score-circle ' + cls + '">' +
+    '<span class="score-num">' + result.score + '</span>' +
+    '<span class="score-label">满分100分</span>' +
+    '</div>';
+
+  document.getElementById('summary-grid').innerHTML =
+    '<div class="summary-item"><div class="num" style="color:var(--success)">' + result.correct + '</div><div class="lbl">正确题数</div></div>' +
+    '<div class="summary-item"><div class="num" style="color:var(--danger)">' + (45 - result.correct) + '</div><div class="lbl">错误题数</div></div>' +
+    '<div class="summary-item"><div class="num">' + result.singleCorrect + '/25</div><div class="lbl">单选题</div></div>' +
+    '<div class="summary-item"><div class="num">' + result.multiCorrect + '/10</div><div class="lbl">多选题</div></div>' +
+    '<div class="summary-item"><div class="num">' + result.judgeCorrect + '/10</div><div class="lbl">判断题</div></div>' +
+    '<div class="summary-item"><div class="num">' + Math.floor(result.timeSeconds/60) + '分' + (result.timeSeconds%60) + '秒</div><div class="lbl">用时</div></div>';
+
+  // Store for full analysis viewing
+  window._lastResult = result;
+}
+
+function viewFullAnalysis() {
+  if (!window._lastResult) return;
+  const result = window._lastResult;
+  showPage('full-analysis');
+  renderFullAnalysis(result);
+}
+
+function renderFullAnalysis(result) {
+  // Tabs
+  const tabs = document.getElementById('analysis-tabs');
+  tabs.innerHTML =
+    '<button class="active" onclick="switchAnalysisTab(\'all\',this)">全部题目</button>' +
+    '<button onclick="switchAnalysisTab(\'wrong\',this)">仅看错题</button>' +
+    '<button onclick="switchAnalysisTab(\'single\',this)">单选题</button>' +
+    '<button onclick="switchAnalysisTab(\'multi\',this)">多选题</button>' +
+    '<button onclick="switchAnalysisTab(\'judge\',this)">判断题</button>';
+
+  window._analysisData = result;
+  window._analysisFilter = 'all';
+  renderAnalysisContent();
+}
+
+function switchAnalysisTab(filter, btn) {
+  window._analysisFilter = filter;
+  document.querySelectorAll('#analysis-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAnalysisContent();
+}
+
+function renderAnalysisContent() {
+  const result = window._analysisData;
+  const filter = window._analysisFilter;
+  const content = document.getElementById('analysis-content');
+
+  let details = result.details.map((d, i) => ({...d, idx: i}));
+
+  if (filter === 'wrong') details = details.filter(d => !d.isCorrect);
+  else if (filter === 'single') details = details.filter(d => d.q.type === 'single');
+  else if (filter === 'multi') details = details.filter(d => d.q.type === 'multi');
+  else if (filter === 'judge') details = details.filter(d => d.q.type === 'judge');
+
+  let html = '';
+  details.forEach(d => {
+    const q = d.q;
+    const typeLabel = q.type === 'single' ? '单选' : q.type === 'multi' ? '多选' : '判断';
+    const typeClass = q.type === 'single' ? 'type-single' : q.type === 'multi' ? 'type-multi' : 'type-judge';
+    const labels = q.type === 'judge' ? ['正确','错误'] : ['A','B','C','D','E'].slice(0,q.opts.length);
+    const correctLabels = q.ans.map(a => labels[a]).join('、');
+    const userLabels = (d.userAns || []).length > 0 ? (d.userAns||[]).map(a => labels[a]).join('、') : '未作答';
+
+    html += '<div class="card">';
+    html += '<div class="question-num">第' + (d.idx+1) + '题</div>';
+    html += '<span class="question-type ' + typeClass + '">' + typeLabel + '</span>';
+    html += ' <span style="color:var(--text2);font-size:.8em">[' + q.ch + '] ' + q.topic + '</span>';
+    html += ' <span class="' + (d.isCorrect ? 'right-tag' : 'wrong-tag') + '">' + (d.isCorrect ? '正确' : '错误') + '</span>';
+    html += '<div class="question-text">' + q.q + '</div>';
+
+    q.opts.forEach((opt, oi) => {
+      const isCorrectOpt = q.ans.includes(oi);
+      const isUserOpt = (d.userAns || []).includes(oi);
+      let cls = '';
+      if (isCorrectOpt) cls = ' correct';
+      if (isUserOpt && !isCorrectOpt) cls = ' wrong';
+      // If user didn't select a correct option, still show it as correct
+      html += '<div class="option' + cls + '" style="cursor:default">';
+      html += '<span class="option-label">' + labels[oi] + '.</span>';
+      html += '<span>' + opt + '</span>';
+      if (isCorrectOpt) html += ' <span style="color:var(--success);font-size:.8em">正确答案</span>';
+      if (isUserOpt && !isCorrectOpt) html += ' <span style="color:var(--danger);font-size:.8em">你的选择</span>';
+      html += '</div>';
+    });
+
+    html += '<div class="analysis-box">';
+    html += '<h4>解析</h4>';
+    html += '<p>' + q.explain + '</p>';
+    html += '<p style="margin-top:6px"><strong>你的答案：</strong>' + userLabels + ' | <strong>正确答案：</strong>' + correctLabels + '</p>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  if (details.length === 0) {
+    html = '<div class="card" style="text-align:center"><p style="color:var(--success);font-size:1.1em">全部正确！</p></div>';
+  }
+  content.innerHTML = html;
+  window.scrollTo(0, 0);
+}
+
+// ===================== ERROR NOTEBOOK =====================
+function renderErrors() {
+  const div = document.getElementById('error-notebook');
+  const btn = document.getElementById('btn-retest');
+
+  if (appState.errors.length === 0) {
+    div.innerHTML = '<p style="color:var(--success);text-align:center;padding:24px;font-size:1.1em">暂无错题记录，继续保持！</p>';
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'inline-flex';
+
+  // Group errors by chapter and topic
+  const grouped = {};
+  appState.errors.forEach(e => {
+    const q = QUESTION_BANK.find(q => q.id === e.qid);
+    if (!q) return;
+    const key = q.ch + ' > ' + q.topic;
+    if (!grouped[key]) grouped[key] = { ch: q.ch, topic: q.topic, errors: [] };
+    // Avoid duplicate questions in same group
+    if (!grouped[key].errors.find(x => x.id === q.id)) {
+      grouped[key].errors.push({...q, errorCount: 1});
+    } else {
+      grouped[key].errors.find(x => x.id === q.id).errorCount++;
+    }
+  });
+
+  // Sort by error count
+  const sorted = Object.values(grouped).sort((a, b) => {
+    const aTotal = a.errors.reduce((s, e) => s + e.errorCount, 0);
+    const bTotal = b.errors.reduce((s, e) => s + e.errorCount, 0);
+    return bTotal - aTotal;
+  });
+
+  let html = '';
+  sorted.forEach(group => {
+    const totalErrors = group.errors.reduce((s, e) => s + e.errorCount, 0);
+    html += '<div class="error-group">';
+    html += '<h3>' + group.topic +
+      '<span class="error-chapter">' + group.ch + '</span>' +
+      '<span class="error-count">' + totalErrors + ' 次错误</span></h3>';
+    html += '<div>';
+    group.errors.forEach(q => {
+      html += '<div class="error-item">';
+      html += '<span class="topic-tag">' + q.type + '</span>';
+      html += '<strong>Q:</strong> ' + q.q.substring(0, 80) + (q.q.length > 80 ? '...' : '');
+      html += '<br><span style="color:var(--text2);font-size:.85em">答案: ' +
+        (q.type==='judge' ? (q.ans[0]===0?'正确':'错误') : q.ans.map(a => 'ABCDE'[a]).join('')) +
+        ' | ' + q.explain.substring(0, 60) + '...</span>';
+      html += '<br><span style="color:var(--danger);font-size:.8em">错误 ' + q.errorCount + ' 次</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  div.innerHTML = html;
+}
+
+function retestErrors() {
+  if (appState.errors.length === 0) return;
+
+  // Get unique error question IDs
+  const errorQids = [...new Set(appState.errors.map(e => e.qid))];
+  const errorQuestions = errorQids.map(id => QUESTION_BANK.find(q => q.id === id)).filter(Boolean);
+
+  // Separate by type
+  const errorSingles = errorQuestions.filter(q => q.type === 'single');
+  const errorMultis = errorQuestions.filter(q => q.type === 'multi');
+  const errorJudges = errorQuestions.filter(q => q.type === 'judge');
+
+  // Fill with regular questions if not enough error questions
+  function fillPool(errorPool, fullPool, target) {
+    const result = [...errorPool];
+    const usedIds = new Set(result.map(q => q.id));
+    const remaining = fullPool.filter(q => !usedIds.has(q.id));
+    // Shuffle remaining
+    for (let i = remaining.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    }
+    result.push(...remaining.slice(0, target - result.length));
+    // Shuffle result
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result.slice(0, target);
+  }
+
+  const singles = fillPool(errorSingles, QUESTION_BANK.filter(q => q.type === 'single'), 25);
+  const multis = fillPool(errorMultis, QUESTION_BANK.filter(q => q.type === 'multi'), 10);
+  const judges = fillPool(errorJudges, QUESTION_BANK.filter(q => q.type === 'judge'), 10);
+
+  const questions = [...singles, ...multis, ...judges];
+
+  appState.currentExam = {
+    questions,
+    answers: new Array(45).fill(null),
+    startTime: Date.now(),
+    flagged: new Set()
+  };
+  appState.currentExam.questions.forEach((q, i) => {
+    if (q.type === 'multi') appState.currentExam.answers[i] = [];
+  });
+  appState.flagged = new Set();
+  appState.currentQIdx = 0;
+  showPage('exam');
+  if (!appState._timerInterval) {
+    appState._timerInterval = setInterval(updateTimer, 1000);
+  }
+  updateTimer();
+  renderQuestion();
+  renderProgress();
+}
+
+// ===================== HISTORY =====================
+function renderHistory() {
+  const div = document.getElementById('history-list');
+  if (appState.exams.length === 0) {
+    div.innerHTML = '<p style="color:var(--text2);text-align:center;padding:24px">暂无考试记录</p>';
+    return;
+  }
+
+  let html = '';
+  [...appState.exams].reverse().forEach((exam, ri) => {
+    const pct = Math.round(exam.score / 100 * 100);
+    const cls = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--primary)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
+    html += '<div class="card" style="cursor:pointer" onclick="viewHistoryExam(' + (appState.exams.length - 1 - ri) + ')">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+    html += '<div>';
+    html += '<strong style="font-size:1.1em;color:' + cls + '">' + exam.score + '分</strong>';
+    html += '<span style="color:var(--text2);margin-left:8px">' + new Date(exam.date).toLocaleString() + '</span>';
+    html += '</div>';
+    html += '<div style="color:var(--text2);font-size:.9em">正确 ' + exam.correct + '/45 | 单选' + exam.singleCorrect + '/25 多选' + exam.multiCorrect + '/10 判断' + exam.judgeCorrect + '/10</div>';
+    html += '</div></div>';
+  });
+  div.innerHTML = html;
+}
+
+function viewHistoryExam(idx) {
+  const exam = appState.exams[idx];
+  if (!exam || !exam.details) return;
+  window._lastResult = exam;
+  viewFullAnalysis();
+}
+
+function updateErrorBadge() {
+  const badge = document.getElementById('err-badge');
+  if (badge) {
+    const uniqueErrors = new Set(appState.errors.map(e => e.qid)).size;
+    badge.textContent = uniqueErrors;
+    badge.style.display = uniqueErrors > 0 ? 'inline' : 'none';
+  }
+}
+
+// ===================== INIT =====================
+function init() {
+  loadState();
+  showPage('home');
+  refreshHome();
+  updateErrorBadge();
+}
+
+// Clean up timer on page unload
+window.addEventListener('beforeunload', () => {
+  if (appState._timerInterval) clearInterval(appState._timerInterval);
+});
+
+init();
+</script>
+</body>
+</html>
