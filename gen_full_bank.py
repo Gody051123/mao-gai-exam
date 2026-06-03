@@ -30,7 +30,13 @@ chapter_map = {
   '党的宗旨':'第十五章',
 }
 
-# 2. Generate questions with detailed explanations
+# 2. Build reverse lookup: answer_text -> (topic, question_text)
+answer_lookup = {}
+for topic, items in facts.items():
+    for item in items:
+        answer_lookup[item['a']] = (topic, item['q'])
+
+# 3. Generate questions with detailed explanations
 singles = []
 multis = []
 judges = []
@@ -50,7 +56,11 @@ for topic, items in facts.items():
         explain_lines.append('')
         explain_lines.append('【选项辨析】')
         for w in wrong:
-            explain_lines.append('  - ' + w + '：此选项不正确，请注意区分相关概念。')
+            if w in answer_lookup:
+                w_topic, w_question = answer_lookup[w]
+                explain_lines.append('  - ' + w + '：错误。' + w + '是「' + w_question + '」的答案，属于' + w_topic + '内容，与本题所问不同。')
+            else:
+                explain_lines.append('  - ' + w + '：此选项不正确，请注意区分相关概念。')
         explain_lines.append('')
         explain_lines.append('【复习建议】请结合教材' + ch + '相关内容系统复习' + topic + '的知识点，注意区分易混淆概念。')
         detail = '\n'.join(explain_lines)
@@ -105,9 +115,13 @@ for md in multi_data:
     m_lines = ['【正确答案】如标记所示。', '', '【选项辨析】']
     for i, opt in enumerate(md['opts']):
         if i in md['ans']:
-            m_lines.append('  - ' + opt + '：正确选项。')
+            m_lines.append('  - ' + opt + '：✓ 正确选项。')
         else:
-            m_lines.append('  - ' + opt + '：不正确。')
+            if opt in answer_lookup:
+                w_topic, w_question = answer_lookup[opt]
+                m_lines.append('  - ' + opt + '：✗ 不选。' + opt + '是「' + w_question + '」的答案，属于' + w_topic + '内容，与本题无关。')
+            else:
+                m_lines.append('  - ' + opt + '：✗ 不选。此说法不正确或与本题无关。')
     m_lines.append('')
     m_lines.append('【复习建议】请结合教材' + ch + '相关内容系统复习' + md['topic'] + '的知识点。')
     m_detail = '\n'.join(m_lines)
@@ -153,7 +167,18 @@ for q_text, ans_val, topic in judge_data:
     if is_correct:
         j_detail += '这是一个正确的论断，是毛概课程中的重要考点，请准确记忆。'
     else:
-        j_detail += '此说法不正确。请结合教材' + ch + '中关于' + topic + '的内容，纠正此错误理解。'
+        # Try to find what the correct answer should be from the facts DB
+        found_correct = False
+        for t, items in facts.items():
+            for it in items:
+                if it['a'] in q_text or any(kw in q_text for kw in it.get('wrong', [])):
+                    j_detail += '此说法不正确。正确的理解应是：' + it['q'] + '的答案是' + it['a'] + '。请区分这两个概念。'
+                    found_correct = True
+                    break
+            if found_correct:
+                break
+        if not found_correct:
+            j_detail += '此说法不正确。请结合教材' + ch + '中关于' + topic + '的内容，纠正此错误理解。'
     j_detail += '\n\n【复习建议】判断题的关键在于准确辨析概念的正误，注意常见易错表述。'
     judges.append({'type': 'judge', 'ch': ch, 'topic': topic, 'diff': 1 if is_correct else 2,
                    'q': q_text, 'opts': ['正确', '错误'], 'ans': [ans_val], 'explain': j_detail})
