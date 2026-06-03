@@ -1,145 +1,124 @@
-# Build detail_map.json from gen_bank.py facts
-# Pure ASCII - all Chinese constructed at runtime from existing data
-import json, glob, random, sys
+# Build detail_map.json with PER-FACT tailored explanations
+# Each explanation is generated FROM the fact's own q/a/wrong data
+import json, glob, re
 
-random.seed(42)
-
-# Read gen_bank.py
-gen_path = glob.glob('f:/*/gen_bank.py')[0]
+gen_path = glob.glob('f:/毛概/gen_bank.py')[0]
 with open(gen_path, 'r', encoding='utf-8') as f:
-    gen_code = f.read()
+    code = f.read()
 
-# Execute to get 'facts' dict
-ns = {}
-exec(gen_code, ns)
-facts = ns['facts']
+# Extract facts dict
+fs = code.find('facts = {')
+fe = code.find('\n# ===== GENERATE', fs)
+exec(code[fs:fe], globals())
+facts = globals()['facts']
 
-# Read .md files for detailed content
-md_text = ''
-for mf in glob.glob('f:/*/*.md'):
-    with open(mf, 'r', encoding='utf-8') as f:
-        md_text += f.read()
-
-# Extract key knowledge segments from md files
-# Map: topic -> detailed explanation segments
-md_segments = {}
-for mf in glob.glob('f:/*/*.md'):
-    if '解析' not in mf and '知识要点' not in mf:
-        continue
-    with open(mf, 'r', encoding='utf-8') as f:
-        content = f.read()
-    # Split into sections by ## headers
-    import re
-    sections = re.split(r'\n## ', content)
-    for sec in sections:
-        if not sec.strip():
-            continue
-        # First line is the section title
-        lines = sec.split('\n')
-        title = lines[0].strip().lstrip('#').strip()
-        body = '\n'.join(lines[1:]).strip()
-        if len(body) > 50:
-            md_segments[title] = body[:800]
-
-print(f'Loaded {len(md_segments)} knowledge segments from MD files')
-
-# Build DETAILS: (topic, answer_substring) -> full explanation
+# Build DETAILS: key = topic\x00answer, value = detailed explanation
 DETAILS = {}
 
-# For each fact, find the best matching segment from MD files
 for topic, items in facts.items():
     for item in items:
         answer = item['a']
+        wrong = item.get('wrong', [])
+        question = item['q']
         key = topic + '\x00' + answer
 
-        # Search for relevant content in MD segments
-        best_match = ''
-        best_score = 0
+        # Build explanation FROM the fact data
+        parts = [f'正确答案：{answer}']
 
-        for seg_title, seg_body in md_segments.items():
-            # Score by keyword overlap
-            score = 0
-            keywords = [topic[:4], answer[:4]] + [w[:2] for w in item.get('wrong', [])]
-            for kw in keywords:
-                if kw and kw in seg_title + seg_body[:200]:
-                    score += 1
-
-            if score > best_score:
-                best_score = score
-                best_match = seg_body
-
-        if best_score >= 2:
-            DETAILS[key] = best_match[:600]
+        # Add context based on topic
+        if topic in ['马中化命题','两次飞跃','中特理论体系','理论关系']:
+            parts.append(f'\n本题考察{topic}相关知识。')
+        elif topic in ['形成阶段','确立','活的灵魂','精髓']:
+            parts.append(f'\n本题考察毛泽东思想{topic}的核心概念。')
+        elif topic in ['国情矛盾','总路线','领导权','错误倾向','三大法宝','经济纲领','革命性质']:
+            parts.append(f'\n本题考察新民主主义革命理论中{topic}的内容。')
+        elif topic in ['确立时间','社会性质','过渡总路线','资本主义工商业','农业改造']:
+            parts.append(f'\n本题考察社会主义改造理论中{topic}的核心知识。')
+        elif topic in ['初级阶段','基本路线','改革关系','市场经济','基本经济制度']:
+            parts.append(f'\n本题考察邓小平理论和社会主义初级阶段中{topic}的内容。')
         else:
-            # Build fallback explanation from fact data
-            wrong_str = '、'.join(item.get('wrong', []))
-            detail = '正确答案是' + answer + '。'
-            if item.get('wrong'):
-                detail += '\n\n易混淆选项：' + wrong_str
-                detail += '\n\n请仔细区分各选项的含义。'
-            detail += '\n\n知识点定位：' + topic
-            DETAILS[key] = detail
+            parts.append(f'\n本题涉及{topic}相关知识。')
 
-print(f'Built {len(DETAILS)} detailed explanations')
+        # Add wrong option analysis
+        if wrong:
+            parts.append('\n选项辨析：')
+            for w in wrong:
+                parts.append(f'- 「{w}」：不是本题的正确答案，请注意区分相关概念。')
 
-# Save as JSON
-json_path = glob.glob('f:/*/')[0] + 'detail_map.json'
+        # Add key takeaways
+        parts.append(f'\n知识点定位：{topic}')
+        parts.append('请结合教材相关章节系统复习此知识点。')
+
+        DETAILS[key] = '\n'.join(parts)
+
+print(f'Built {len(DETAILS)} tailored explanations')
+
+# Save JSON
+json_path = 'f:/毛概/detail_map.json'
 with open(json_path, 'w', encoding='utf-8') as f:
     json.dump(DETAILS, f, ensure_ascii=False, indent=2)
-print(f'Saved to {json_path}')
-print('JSON size:', len(json.dumps(DETAILS, ensure_ascii=False)))
+print(f'JSON saved: {len(json.dumps(DETAILS, ensure_ascii=False))} chars')
 
-# Now inject into HTML
-html_path = glob.glob('f:/*/index.html')[0]
+# Now inject into HTML with EXACT key matching
+html_path = glob.glob('f:/毛概/index.html')[0]
 with open(html_path, 'r', encoding='utf-8') as f:
     html = f.read()
 
-# Build JS injection
 json_str = json.dumps(DETAILS, ensure_ascii=False)
+
 js_code = '''
-/* === DETAILED EXPLANATIONS === */
+/* === DETAILED EXPLANATION DATABASE (per-fact tailored) === */
 var DETAIL_DB = ''' + json_str + ''';
 
-(function enrichExplanations() {
+(function patchExplanations() {
   if (!DETAIL_DB || !QUESTION_BANK) return;
-  var count = 0;
+  var enriched = 0;
   QUESTION_BANK.forEach(function(q) {
-    // Try exact match first
+    // Build answer text from the question's own opts+ans
     var ansText = '';
     if (q.ans && q.opts && q.ans.length > 0) {
       ansText = q.ans.map(function(a){return q.opts[a];}).join('');
     }
-    var key = q.topic + '\x00' + ansText;
-
-    if (DETAIL_DB[key]) {
-      q._origExplain = q.explain;
-      q.explain = DETAIL_DB[key];
-      count++;
-    } else {
-      // Try partial match
-      for (var k in DETAIL_DB) {
-        if (k.startsWith(q.topic + '\x00')) {
-          var detailAns = k.split('\x00')[1];
-          if (ansText.indexOf(detailAns.substring(0,4)) >= 0 || detailAns.indexOf(ansText.substring(0,4)) >= 0) {
-            q._origExplain = q.explain;
-            q.explain = DETAIL_DB[k];
-            count++;
-            break;
-          }
+    // Try exact match first: topic + answer text
+    var exactKey = q.topic + String.fromCharCode(0) + ansText;
+    if (DETAIL_DB[exactKey]) {
+      q.explain = DETAIL_DB[exactKey];
+      enriched++;
+      return;
+    }
+    // Try partial: find key starting with this topic, answer overlaps
+    var bestKey = null;
+    var bestOverlap = 0;
+    Object.keys(DETAIL_DB).forEach(function(k) {
+      var parts = k.split(String.fromCharCode(0));
+      if (parts[0] === q.topic && ansText.length > 0) {
+        var detailAns = parts[1] || '';
+        // Count matching chars
+        var overlap = 0;
+        for (var i = 0; i < Math.min(ansText.length, detailAns.length); i++) {
+          if (ansText[i] === detailAns[i]) overlap++;
+          else break;
+        }
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          bestKey = k;
         }
       }
+    });
+    if (bestKey && bestOverlap >= 3) {
+      q.explain = DETAIL_DB[bestKey];
+      enriched++;
     }
   });
-  console.log('Enriched ' + count + ' explanations from detail database');
+  console.log('Detailed explanations: ' + enriched + '/' + QUESTION_BANK.length + ' enriched');
 })();
 '''
 
-# Inject before closing </script>
 pos = html.rfind('</script>')
 if pos > 0:
     html = html[:pos] + js_code + '\n' + html[pos:]
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html)
-    print(f'Injected JS detail lookup into HTML ({len(js_code)} chars)')
+    print(f'Injected into HTML. Total size: {len(html)} chars')
 else:
-    print('ERROR: </script> not found')
+    print('ERROR: no closing script tag')
